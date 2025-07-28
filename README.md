@@ -14,6 +14,7 @@ The system uses a Test-Driven Development (TDD) approach with a team of speciali
 4.  **`Task-Coder`**: Writes the necessary code to make the test pass.
 5.  **`Tester`** (again): Validates that the Coder's work passes the test.
 6.  **`Code-Reviewer`**: Performs a final quality and style check on the code.
+7.  **`Cleaner`**: Maintains system performance by managing log files and preventing file bloat.
 
 This entire process is managed by an **Orchestrator** agent (defined in `.templates/CLAUDE.md.template`) that dispatches tasks to the correct agent based on the status in a central `tasks.json` file.
 
@@ -27,6 +28,36 @@ To use these agents with Claude Code:
 
 2.  Restart Claude Code.
 
-## Templates
+## Usage Instructions
 
-Templates for files that can be used by the agents (like the main orchestrator prompt) are stored in the `.templates` directory and have a `.template` extension.
+### Submitting Feature and Fix Requests
+- **Do NOT** request features or report bugs directly to Claude Code.
+- Instead, add them to `.plan/featurerequest.md` in your project.
+- The Product-Manager agent will process all new requests at the start of the next development cycle.
+
+### Handling Agent Questions
+- Regularly check `.plan/human-in-the-loop.md` for TODOs.
+- If an agent is blocked (needs clarification or information), it will add a TODO here.
+- Respond to the TODO in the same file to unblock the task.
+
+## Template Files Reference
+
+Templates for files that will be used by the agents (like the main orchestrator prompt) are stored in the `.templates` directory and have a `.template` extension.
+
+### Core Agent Files (in `.templates/`)
+- `CLAUDE.md.template` - Main orchestrator prompt. Used by the Orchestrator agent to coordinate all other agents.
+
+### Planning Files (in `.templates/.plan/`)
+- `tasks.json.template` - Central task list (the blackboard). Used by all agents to coordinate work.
+- `review-report.md.template` - Code review findings. Written by Code-Reviewer, read by Task-Coder.
+- `human-in-the-loop.md.template` - Questions/blockers for the user. Written by any agent, read and written by user.
+- `product_vision.md.template` - High-level project goals. Written by Strategist, read by Product-Manager.
+- `user_stories.md.template` - Detailed requirements. Written by Strategist, read by Product-Manager.
+- `featurerequest.md.template` - Feature/bug requests. Written by users, read and processed by Product-Manager.
+
+### Test Files (in `.templates/tests/`)
+- `test_plan.md.template` - Test suite organization. Used by Tester to plan test cases.
+- `test_example.py.template` - Example test file. Written/executed by Tester.
+- `test_log.md.template` - Test execution results. Written by Tester, read by Tester/Product-Manager.
+
+

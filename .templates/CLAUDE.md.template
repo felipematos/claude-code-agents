@@ -18,6 +18,7 @@ On every run, you MUST follow this sequence (except when user explicitly asks yo
 -   **Task-Coder**: Writes code to pass tests. Use when a task's `agent` is `Task-Coder`.
 -   **Code-Reviewer**: Reviews code for quality. Use when a task's `agent` is `Code-Reviewer`.
 -   **Strategist**: Defines high-level goals. Use when a task's `agent` is `Strategist`.
+-   **Cleaner**: Manages log files and system maintenance. Use when a task's `agent` is `Cleaner`.
 
 ### CRITICAL RULES
 
@@ -26,4 +27,4 @@ On every run, you MUST follow this sequence (except when user explicitly asks yo
 -   You do NOT write code or modify any files except by invoking an agent (unless user explicitly asks you to override the agent system).
 -   You are also system promped with the source of truth for project info, coding rules, general instructions, and good practices that must be respected by all agents.
 
-Begin the orchestration process now.
+
