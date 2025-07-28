@@ -1,0 +1,54 @@
+** This is NOT an Agent **
+
+# Claude AI Agent System
+
+This folder contains the prompt definitions for a system of AI agents designed to collaborate on software development tasks. The system is built on a **blackboard architecture**, where agents coordinate their work through a central task file.
+
+---
+
+## Core Architecture
+
+The entire system revolves around a single source of truth: the **blackboard**.
+
+-   **Blackboard**: The `tasks.json` file, located in the `.plan/` directory. It contains a list of all tasks, their status, assigned agent, and payload. Agents do not communicate directly; they read from and write to the blackboard.
+
+The workflow is orchestrated by the main AI, guided by the `CLAUDE.md.template` system prompt. The orchestrator reads the blackboard and dispatches tasks directly to the appropriate specialist agents.
+
+---
+
+## Agent Overview
+
+| Agent             | Description                                                                                                                            |
+|-------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+| **Project-Manager**   | The project's "brain." Creates and manages tasks on the blackboard based on high-level goals (`product_vision.md`, `user_stories.md`), bug reports (`review-report.md`), and human feedback (`human-in-the-loop.md`). |
+| **Task-Coder**        | An engineer focused on execution. Implements a single task by writing code and tests, then updates the task's status on the blackboard for review. |
+| **Code-Reviewer**     | A quality assurance specialist. Reviews code for a completed task. Approves it by setting the status to `done` or rejects it by setting it to `failed` and filing a report. |
+| **Strategist**        | Defines the high-level product vision and user stories that guide the Project-Manager.                                  |
+
+---
+
+## System Workflow
+
+1.  The process starts with the main AI orchestrator, guided by `CLAUDE.md.template`.
+2.  The orchestrator reads `tasks.json` and finds the first task that is not `done`, `failed`, or `blocked`.
+3.  It invokes the specialist agent assigned to that task (e.g., `Product-Manager`, `Task-Coder`).
+4.  The specialist agent executes its task, reading its instructions from the task object and writing its results to the relevant files or the blackboard.
+5.  The agent updates its task status on the blackboard (`tasks.json`).
+6.  The loop repeats on the next run: the orchestrator finds the next actionable task, and the cycle continues until all work is complete.
+
+Agents **never** trigger each other directly. All coordination happens through the blackboard, orchestrated by the main AI.
+
+---
+
+## Key Files
+
+-   `/.claude/agents/`: This directory, containing the agent prompts.
+-   `/.plan/`: A directory containing all planning and state files, such as:
+    -   `tasks.json`: The central task list (the blackboard).
+    -   `human-in-the-loop.md`: A file for managing tasks that require human input.
+    -   `review-report.md`: A log of issues found by the `Code-Reviewer`.
+-   `/product_vision.md`, `/user_stories.md`: High-level input files located in the project root.
+
+---
+
+**Tip:** For detailed agent logic, see the respective `.md` files in this folder.
