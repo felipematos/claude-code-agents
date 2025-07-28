@@ -1,0 +1,38 @@
+import unittest
+from src.main import add # Assuming 'add' function exists in 'src/main.py'
+
+class TestMathFunctions(unittest.TestCase):
+
+    def test_add_positive_numbers(self):
+        """
+        Test that the 'add' function correctly sums two positive numbers.
+        This test is designed to fail initially until the 'add' function is implemented.
+        """
+        # Arrange
+        a = 5
+        b = 10
+        expected = 15
+
+        # Act
+        result = add(a, b)
+
+        # Assert
+        self.assertEqual(result, expected, "The sum should be correct for positive numbers.")
+
+    def test_add_negative_numbers(self):
+        """
+        Test that the 'add' function correctly sums two negative numbers.
+        """
+        # Arrange
+        a = -5
+        b = -10
+        expected = -15
+
+        # Act
+        result = add(a, b)
+
+        # Assert
+        self.assertEqual(result, expected, "The sum should be correct for negative numbers.")
+
+if __name__ == '__main__':
+    unittest.main()

@@ -1,0 +1,15 @@
+# Code Review Report
+
+_Last updated: YYYY-MM-DD · Owner: Code-Reviewer_
+
+---
+
+## ISSUE: TASK-003 - SQL Injection Vulnerability
+
+-   **File**: `src/database.py`
+-   **Lines**: 45-50
+-   **Severity**: Critical
+-   **Description**: The database query is constructed using string formatting, which makes it vulnerable to SQL injection. All database queries must use parameterized statements.
+-   **Recommendation**: Rewrite the query using the library's safe parameter substitution.
+
+---

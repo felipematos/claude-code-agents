@@ -1,0 +1,25 @@
+# Test Execution Log
+
+_This file contains a log of all major test suite executions._
+
+---
+
+## Run: YYYY-MM-DD HH:MM:SS
+
+-   **Suite**: Full Regression Suite (REG-FULL)
+-   **Trigger**: Pre-deployment for v1.1.0
+-   **Outcome**: **PASSED**
+-   **Duration**: 125 seconds
+-   **Notes**: All 58 tests passed successfully.
+
+---
+
+## Run: YYYY-MM-DD HH:MM:SS
+
+-   **Suite**: Full Regression Suite (REG-FULL)
+-   **Trigger**: Pre-deployment for v1.0.0
+-   **Outcome**: **FAILED**
+-   **Duration**: 98 seconds
+-   **Notes**: Test `test_user_authentication.py::test_login_with_invalid_password` failed. See `review-report.md` for details.
+
+---

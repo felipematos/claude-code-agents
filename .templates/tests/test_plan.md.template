@@ -1,0 +1,24 @@
+# Test Plan
+
+_Last updated: YYYY-MM-DD · Owner: Tester_
+
+This document outlines the testing strategies and plans for this project.
+
+---
+
+## Test Suites
+
+### 1. Full Regression Suite (ID: REG-FULL)
+
+This suite should be run before any new version is deployed. It ensures that all critical functionality is working as expected.
+
+**Tests to run:**
+- `tests/test_core_functionality.py`
+- `tests/test_user_authentication.py`
+
+### 2. Smoke Test Suite (ID: SMOKE-01)
+
+A quick suite to run after minor changes.
+
+**Tests to run:**
+- `tests/test_api_health_check.py`

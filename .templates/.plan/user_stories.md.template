@@ -1,0 +1,23 @@
+# User Stories
+_Last updated: YYYY-MM-DD · Owner: Strategist_
+
+## Conventions
+- ID format: US-001, US-002, …
+- Priority: P0 (critical) / P1 / P2
+- Status: Draft / Ready / Implemented / Archived
+
+---
+### US-001 – User Authentication
+**As a** user,
+**I want to** be able to log in with my email and password,
+**So that** I can access my private dashboard.
+
+**Acceptance Criteria:**
+- GIVEN I am on the login page
+- WHEN I enter a valid email and password
+- THEN I should be redirected to my dashboard
+
+- **Priority**: P0
+- **Status**: Ready
+
+<!-- changelog: YYYY-MM-DD HH:MM:SS -03:00 Added authentication story. -->

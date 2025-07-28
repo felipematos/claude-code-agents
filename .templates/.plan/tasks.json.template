@@ -1,0 +1,30 @@
+[
+  {
+    "task_id": "TASK-001",
+    "agent": "Tester",
+    "status": "pending",
+    "payload": {
+      "description": "Implement user authentication endpoint.",
+      "source_story_id": "US-001"
+    },
+    "result": {
+      "message": "",
+      "artifacts": []
+    }
+  },
+  {
+    "task_id": "TASK-002",
+    "agent": "Task-Coder",
+    "status": "test_defined",
+    "payload": {
+      "description": "Create a basic landing page.",
+      "source_story_id": "US-002"
+    },
+    "result": {
+      "message": "",
+      "artifacts": [
+        "/tests/test_landing_page.py"
+      ]
+    }
+  }
+]
