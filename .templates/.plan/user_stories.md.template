@@ -4,7 +4,9 @@ _Last updated: YYYY-MM-DD · Owner: Strategist_
 ## Conventions
 - ID format: US-001, US-002, …
 - Priority: P0 (critical) / P1 / P2
+- Criticality: Critical / High / Medium / Low (for UI testing)
 - Status: Draft / Ready / Implemented / Archived
+- UI Test Status: Pending / Designed / Tested / Passed / Failed
 
 ---
 ### US-001 – User Authentication
@@ -18,6 +20,81 @@ _Last updated: YYYY-MM-DD · Owner: Strategist_
 - THEN I should be redirected to my dashboard
 
 - **Priority**: P0
+- **Criticality**: Critical
 - **Status**: Ready
+- **UI Test Status**: Pending
 
-<!-- changelog: YYYY-MM-DD HH:MM:SS -03:00 Added authentication story. -->
+**UI Test Workflow:**
+```json
+{
+  "user_story_id": "US-001",
+  "criticality": "Critical",
+  "environment": "staging",
+  "test_name": "User Login Authentication",
+  "description": "Validates user can log in with valid credentials",
+  "preconditions": [
+    "User account exists in staging database",
+    "Login page is accessible"
+  ],
+  "steps": [
+    {
+      "step_number": 1,
+      "action": "navigate",
+      "target": "https://staging.yourapp.com/login",
+      "description": "Navigate to login page",
+      "expected_result": "Login form is displayed"
+    },
+    {
+      "step_number": 2,
+      "action": "fill",
+      "target": "#email",
+      "value": "test@example.com",
+      "description": "Enter valid email",
+      "expected_result": "Email field accepts input"
+    },
+    {
+      "step_number": 3,
+      "action": "fill",
+      "target": "#password",
+      "value": "validpassword123",
+      "description": "Enter valid password",
+      "expected_result": "Password field accepts input"
+    },
+    {
+      "step_number": 4,
+      "action": "click",
+      "target": "[data-testid='login-button']",
+      "description": "Click login button",
+      "expected_result": "Login process initiates"
+    },
+    {
+      "step_number": 5,
+      "action": "wait",
+      "target": ".dashboard",
+      "description": "Wait for dashboard to load",
+      "expected_result": "Dashboard page loads"
+    },
+    {
+      "step_number": 6,
+      "action": "assert",
+      "target": ".user-welcome",
+      "value": "Welcome",
+      "description": "Verify welcome message appears",
+      "expected_result": "User sees welcome message"
+    }
+  ],
+  "cleanup_steps": [
+    {
+      "action": "logout",
+      "description": "Log out user to clean session"
+    }
+  ],
+  "success_criteria": [
+    "User successfully logs in with valid credentials",
+    "User is redirected to dashboard",
+    "Welcome message is displayed"
+  ]
+}
+```
+
+<!-- changelog: YYYY-MM-DD HH:MM:SS -03:00 Added authentication story with UI test workflow. -->

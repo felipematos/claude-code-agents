@@ -8,13 +8,16 @@ This repository contains a collection of prompts for a multi-agent AI system des
 
 The system uses a Test-Driven Development (TDD) approach with a team of specialized AI agents:
 
-1.  **`Strategist`**: Defines the high-level product vision and user stories.
-2.  **`Product-Manager`**: Translates the vision into concrete, prioritized tasks.
-3.  **`Tester`**: Receives a new task, writes a failing test that defines the requirements, and then passes it to the Coder.
-4.  **`Task-Coder`**: Writes the necessary code to make the test pass.
-5.  **`Tester`** (again): Validates that the Coder's work passes the test.
-6.  **`Code-Reviewer`**: Performs a final quality and style check on the code.
-7.  **`Cleaner`**: Maintains system performance by managing log files and preventing file bloat.
+1.  **`Strategist`**: Defines the high-level product vision and strategic stages.
+2.  **`Product-Owner`**: Manages milestones, epics, and user stories based on strategic direction.
+3.  **`Product-Manager`**: Organizes roadmap, manages sprints, breaks down work into tasks, and creates UI test design tasks.
+4.  **`Tester`**: Receives a new task, writes a failing test that defines the requirements, and then passes it to the Coder.
+5.  **`UI-Test-Designer`**: Designs JSON-based UI test workflows for user stories with browser automation steps.
+6.  **`Task-Coder`**: Writes the necessary code to make the test pass and commits changes with changelog descriptions.
+7.  **`Tester`** (again): Validates that the Coder's work passes the test.
+8.  **`UI-Tester`**: Executes UI test workflows in staging environment before deployment.
+9.  **`Code-Reviewer`**: Performs a final quality and style check on the code.
+10. **`Cleaner`**: Maintains system performance by managing log files and ensuring archived logs are in .gitignore.
 
 This entire process is managed by an **Orchestrator** agent (defined in `.templates/CLAUDE.md.template`) that dispatches tasks to the correct agent based on the status in a central `tasks.json` file.
 
@@ -51,13 +54,22 @@ Templates for files that will be used by the agents (like the main orchestrator 
 - `tasks.json.template` - Central task list (the blackboard). Used by all agents to coordinate work.
 - `review-report.md.template` - Code review findings. Written by Code-Reviewer, read by Task-Coder.
 - `human-in-the-loop.md.template` - Questions/blockers for the user. Written by any agent, read and written by user.
-- `product_vision.md.template` - High-level project goals. Written by Strategist, read by Product-Manager.
-- `user_stories.md.template` - Detailed requirements. Written by Strategist, read by Product-Manager.
 - `featurerequest.md.template` - Feature/bug requests. Written by users, read and processed by Product-Manager.
+
+### Strategic Planning Files (in project root)
+- `product_vision.md.template` - High-level project goals and stages. Written by Strategist, read by Product-Owner.
+- `roadmap.md.template` - Product roadmap with stages, milestones, epics, and sprints. Organized by Product-Manager, enhanced by Product-Owner.
+- `epic.md.template` - Epic definitions with technical architecture and sprint breakdown. Written by Product-Owner.
+- `user_stories.md.template` - Detailed requirements and user stories. Written by Product-Owner, read by Product-Manager.
 
 ### Test Files (in `.templates/tests/`)
 - `test_plan.md.template` - Test suite organization. Used by Tester to plan test cases.
 - `test_example.py.template` - Example test file. Written/executed by Tester.
 - `test_log.md.template` - Test execution results. Written by Tester, read by Tester/Product-Manager.
+- `ui_test_log.md.template` - UI test execution logs. Written by UI-Tester with detailed browser automation results.
+
+### Additional Templates
+- `deployment_workflow.md.template` - Deployment process with UI testing integration and failure handling.
+- `task_schema.json.template` - Complete task schema including UI test task types and structure.
 
 

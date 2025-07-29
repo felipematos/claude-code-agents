@@ -1,0 +1,213 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Task Schema",
+  "description": "Schema for tasks in the centralized task queue",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^TASK-[0-9]{3}$",
+      "description": "Unique task identifier (e.g., TASK-001)"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "feature_development",
+        "bug_fix",
+        "ui_test_design",
+        "ui_test_execution",
+        "urgent_fix",
+        "deployment",
+        "cleanup",
+        "human_input_required"
+      ],
+      "description": "Type of task to be performed"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "in_progress", "done", "blocked", "backlog"],
+      "description": "Current status of the task"
+    },
+    "agent": {
+      "type": "string",
+      "enum": [
+        "Task-Coder",
+        "Tester",
+        "UI-Test-Designer",
+        "UI-Tester",
+        "Product-Manager",
+        "Cleaner"
+      ],
+      "description": "Agent responsible for executing this task"
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["urgent", "high", "medium", "low"],
+      "description": "Task priority level"
+    },
+    "priority_score": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Calculated priority score using (Value * Stage Fit) / Effort formula"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when task was created"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when task was last updated"
+    },
+    "source_story_id": {
+      "type": "string",
+      "pattern": "^US-[0-9]{3}$",
+      "description": "Reference to source user story (e.g., US-001)"
+    },
+    "depends_on": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^TASK-[0-9]{3}$"
+      },
+      "description": "List of task IDs this task depends on"
+    },
+    "payload": {
+      "type": "object",
+      "description": "Task-specific data and parameters",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Human-readable task title"
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed task description"
+        }
+      },
+      "required": ["title"],
+      "additionalProperties": true
+    },
+    "result": {
+      "type": "object",
+      "description": "Task execution results",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["success", "failure", "partial"]
+        },
+        "message": {
+          "type": "string",
+          "description": "Result message or error details"
+        },
+        "files_modified": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of files modified during task execution"
+        },
+        "test_results": {
+          "type": "object",
+          "description": "Test execution results (for UI test tasks)",
+          "properties": {
+            "total_tests": {"type": "integer"},
+            "passed_tests": {"type": "integer"},
+            "failed_tests": {"type": "integer"},
+            "test_log_path": {"type": "string"}
+          }
+        },
+        "deployment_info": {
+          "type": "object",
+          "description": "Deployment-specific results",
+          "properties": {
+            "staging_url": {"type": "string"},
+            "production_url": {"type": "string"},
+            "rollback_performed": {"type": "boolean"}
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "required": ["id", "type", "status", "agent", "priority", "created_at", "payload"],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "id": "TASK-001",
+      "type": "feature_development",
+      "status": "pending",
+      "agent": "Task-Coder",
+      "priority": "high",
+      "priority_score": 4.2,
+      "created_at": "2024-01-15T10:30:00Z",
+      "updated_at": "2024-01-15T10:30:00Z",
+      "source_story_id": "US-001",
+      "depends_on": [],
+      "payload": {
+        "title": "Implement user authentication",
+        "description": "Create login/logout functionality with session management",
+        "acceptance_criteria": [
+          "User can log in with email/password",
+          "User can log out",
+          "Session persists across browser refresh"
+        ]
+      }
+    },
+    {
+      "id": "TASK-002",
+      "type": "ui_test_design",
+      "status": "pending",
+      "agent": "UI-Test-Designer",
+      "priority": "high",
+      "created_at": "2024-01-15T10:31:00Z",
+      "updated_at": "2024-01-15T10:31:00Z",
+      "source_story_id": "US-001",
+      "depends_on": [],
+      "payload": {
+        "title": "Design UI tests for user authentication",
+        "description": "Create UI test workflow for login/logout functionality",
+        "criticality": "critical",
+        "user_story_id": "US-001"
+      }
+    },
+    {
+      "id": "TASK-003",
+      "type": "ui_test_execution",
+      "status": "pending",
+      "agent": "UI-Tester",
+      "priority": "high",
+      "created_at": "2024-01-15T11:00:00Z",
+      "updated_at": "2024-01-15T11:00:00Z",
+      "source_story_id": "US-001",
+      "depends_on": ["TASK-001", "TASK-002"],
+      "payload": {
+        "title": "Execute UI tests for user authentication",
+        "description": "Run UI test workflow in staging environment",
+        "test_mode": "critical",
+        "environment": "staging",
+        "ui_test_workflow_path": "tests/ui/US-001-auth-test.json"
+      }
+    },
+    {
+      "id": "TASK-004",
+      "type": "urgent_fix",
+      "status": "pending",
+      "agent": "Task-Coder",
+      "priority": "urgent",
+      "created_at": "2024-01-15T14:30:00Z",
+      "updated_at": "2024-01-15T14:30:00Z",
+      "source_story_id": "US-001",
+      "depends_on": [],
+      "payload": {
+        "title": "Fix failed authentication UI test",
+        "description": "Address login form validation issue causing test failures",
+        "failed_test_id": "UI-TEST-001",
+        "failure_details": "Login button not responding to click events",
+        "blocking_deployment": true,
+        "created_by": "deployment_workflow"
+      }
+    }
+  ]
+}

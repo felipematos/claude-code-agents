@@ -1,0 +1,140 @@
+# Deployment Workflow Template
+
+## Overview
+This template defines the automated deployment workflow that includes UI testing validation before production deployment.
+
+## Deployment Process
+
+### Phase 1: Pre-Deployment Validation
+1. **Code Quality Check**: Ensure all pending tasks are completed
+2. **UI Test Execution**: Run UI tests based on criticality level
+3. **Test Result Validation**: Verify all tests pass before proceeding
+
+### Phase 2: Test Execution Modes
+
+#### Critical Tests (Always Run)
+- **Trigger**: Before every deployment
+- **Scope**: All user stories marked with `"criticality": "critical"`
+- **Failure Action**: Block deployment, create urgent fix tasks
+
+#### Comprehensive Tests (On-Demand)
+- **Trigger**: Manual trigger or major releases
+- **Scope**: All user stories regardless of criticality
+- **Failure Action**: Block deployment, create fix tasks with appropriate priority
+
+#### Partial Tests (Development)
+- **Trigger**: Development builds or feature branches
+- **Scope**: Tests related to changed features only
+- **Failure Action**: Warning only, deployment may proceed with approval
+
+### Phase 3: Deployment Execution
+
+#### Staging Deployment
+1. Deploy to staging environment
+2. Run smoke tests
+3. Validate core functionality
+4. Generate staging report
+
+#### Production Deployment
+1. **Prerequisites**: All staging tests pass
+2. Deploy to production environment
+3. Run post-deployment validation
+4. Monitor for immediate issues
+
+### Phase 4: Failure Handling
+
+#### Test Failure Response
+```json
+{
+  "type": "urgent_fix",
+  "agent": "Task-Coder",
+  "status": "pending",
+  "priority": "urgent",
+  "payload": {
+    "failed_test_id": "UI-TEST-XXX",
+    "user_story_id": "US-XXX",
+    "failure_details": "Test execution log reference",
+    "blocking_deployment": true,
+    "created_by": "deployment_workflow"
+  }
+}
+```
+
+#### Deployment Rollback
+- **Trigger**: Critical test failures or post-deployment issues
+- **Action**: Automatic rollback to previous stable version
+- **Notification**: Alert team of rollback and failure reasons
+
+## Integration Points
+
+### With UI-Tester Agent
+- Request test execution with specified criticality level
+- Receive test results and logs
+- Process test outcomes for deployment decisions
+
+### With Task-Coder Agent
+- Create urgent fix tasks for test failures
+- Link fix tasks to original user stories
+- Set appropriate priority levels
+
+### With Cleaner Agent
+- Archive deployment logs after successful deployments
+- Maintain test execution history
+- Clean up temporary deployment artifacts
+
+## Configuration
+
+### Environment Settings
+```json
+{
+  "staging_url": "https://staging.example.com",
+  "production_url": "https://production.example.com",
+  "test_timeout": 300000,
+  "retry_attempts": 3,
+  "rollback_enabled": true
+}
+```
+
+### Test Execution Settings
+```json
+{
+  "critical_tests_required": true,
+  "comprehensive_tests_on_major_release": true,
+  "allow_partial_test_failures": false,
+  "max_parallel_tests": 5
+}
+```
+
+## Logging and Monitoring
+
+### Deployment Log Format
+```
+## Deployment Log - [TIMESTAMP]
+
+### Pre-Deployment
+- [ ] Code quality check: PASSED/FAILED
+- [ ] UI tests executed: X/Y tests passed
+- [ ] Validation complete: PASSED/FAILED
+
+### Staging Deployment
+- [ ] Staging deployment: SUCCESS/FAILED
+- [ ] Smoke tests: PASSED/FAILED
+- [ ] Staging URL: [URL]
+
+### Production Deployment
+- [ ] Production deployment: SUCCESS/FAILED
+- [ ] Post-deployment validation: PASSED/FAILED
+- [ ] Production URL: [URL]
+
+### Issues
+- Failed tests: [List of failed test IDs]
+- Created fix tasks: [List of task IDs]
+- Rollback performed: YES/NO
+```
+
+## Success Criteria
+- All critical UI tests pass
+- Staging deployment successful
+- Production deployment successful
+- No immediate post-deployment issues
+- All logs properly archived

@@ -1,0 +1,246 @@
+# EPIC: [Epic Name]
+
+## OVERVIEW
+**Epic ID**: EPIC-[YYYY-MM-DD]-[###]
+**Stage**: [Current Stage Name]
+**Milestone**: [Parent Milestone]
+**Status**: [Planning/In Progress/Done]
+**Priority**: [Critical/High/Medium/Low]
+**Created**: [YYYY-MM-DD]
+**Last Updated**: [YYYY-MM-DD]
+
+---
+
+## EPIC DESCRIPTION
+
+### Business Objective
+[Clear description of what this epic aims to achieve from a business perspective]
+
+### User Value
+[Description of value delivered to end users]
+
+### Success Criteria
+- [ ] [Measurable success criterion 1]
+- [ ] [Measurable success criterion 2]
+- [ ] [Measurable success criterion 3]
+
+---
+
+## TECHNICAL ARCHITECTURE
+
+### Current Codebase Analysis
+**Existing Components**:
+- [Component 1]: [Current state and relevance]
+- [Component 2]: [Current state and relevance]
+- [Component 3]: [Current state and relevance]
+
+**Technology Stack Alignment**:
+- **Frontend**: [Current stack compatibility]
+- **Backend**: [Current stack compatibility]
+- **Database**: [Current stack compatibility]
+- **Infrastructure**: [Current stack compatibility]
+
+### CLAUDE.md Conventions Compliance
+- **Coding Standards**: [How epic aligns with established standards]
+- **Architecture Patterns**: [Patterns to follow/extend]
+- **Testing Requirements**: [Testing approach alignment]
+- **Documentation Standards**: [Documentation requirements]
+
+### Technical Requirements
+
+#### New Components
+- **Component A**: [Description, purpose, interfaces]
+- **Component B**: [Description, purpose, interfaces]
+
+#### Modified Components
+- **Component X**: [Changes required, impact assessment]
+- **Component Y**: [Changes required, impact assessment]
+
+#### Integration Points
+- **API Endpoints**: [New/modified endpoints]
+- **Database Schema**: [Schema changes required]
+- **External Services**: [Third-party integrations]
+- **Internal Services**: [Service-to-service communication]
+
+### Performance Considerations
+- **Scalability**: [Expected load and scaling requirements]
+- **Performance Targets**: [Response times, throughput requirements]
+- **Resource Usage**: [Memory, CPU, storage implications]
+- **Caching Strategy**: [Caching approach if applicable]
+
+### Security Considerations
+- **Authentication**: [Auth requirements and changes]
+- **Authorization**: [Permission and access control]
+- **Data Protection**: [Sensitive data handling]
+- **Security Testing**: [Security test requirements]
+
+---
+
+## SPRINT BREAKDOWN
+
+### Sprint Planning
+**Total Estimated Effort**: [X hours] ([Y sprints])
+**Sprint Duration**: 5 hours each
+**Dependencies**: [List of dependencies]
+
+### Sprint 1: [Sprint Name]
+**Duration**: 5 hours
+**Objective**: [Sprint goal]
+**Deliverables**:
+- [Deliverable 1]
+- [Deliverable 2]
+- [Deliverable 3]
+
+**Technical Tasks**:
+- [ ] [Technical task 1] - [Estimated hours]
+- [ ] [Technical task 2] - [Estimated hours]
+- [ ] [Technical task 3] - [Estimated hours]
+
+### Sprint 2: [Sprint Name]
+**Duration**: 5 hours
+**Objective**: [Sprint goal]
+**Deliverables**:
+- [Deliverable 1]
+- [Deliverable 2]
+- [Deliverable 3]
+
+**Technical Tasks**:
+- [ ] [Technical task 1] - [Estimated hours]
+- [ ] [Technical task 2] - [Estimated hours]
+- [ ] [Technical task 3] - [Estimated hours]
+
+### Sprint 3: [Sprint Name] (if needed)
+**Duration**: 5 hours
+**Objective**: [Sprint goal]
+**Deliverables**:
+- [Deliverable 1]
+- [Deliverable 2]
+
+**Technical Tasks**:
+- [ ] [Technical task 1] - [Estimated hours]
+- [ ] [Technical task 2] - [Estimated hours]
+
+---
+
+## USER STORIES
+
+### Story Breakdown
+- **US-[ID]**: [Story title] - [Priority] - [Status]
+- **US-[ID]**: [Story title] - [Priority] - [Status]
+- **US-[ID]**: [Story title] - [Priority] - [Status]
+
+### Story Dependencies
+```mermaid
+graph TD
+    A[US-001] --> B[US-002]
+    B --> C[US-003]
+    A --> D[US-004]
+```
+
+---
+
+## TESTING STRATEGY
+
+### Unit Testing
+- **Coverage Target**: [X]%
+- **Key Components**: [Components requiring unit tests]
+- **Testing Framework**: [Framework alignment with codebase]
+
+### Integration Testing
+- **API Testing**: [Endpoint testing requirements]
+- **Service Integration**: [Inter-service testing]
+- **Database Testing**: [Data layer testing]
+
+### UI Testing
+- **Critical Paths**: [UI test criticality assessment]
+- **Test Automation**: [Automated UI test requirements]
+- **Browser Compatibility**: [Browser support requirements]
+
+### Performance Testing
+- **Load Testing**: [Load test scenarios]
+- **Stress Testing**: [Stress test requirements]
+- **Performance Benchmarks**: [Performance criteria]
+
+---
+
+## RISKS & MITIGATION
+
+### Technical Risks
+| Risk | Impact | Probability | Mitigation Strategy |
+|------|--------|-------------|--------------------|
+| [Risk 1] | High | Medium | [Mitigation approach] |
+| [Risk 2] | Medium | Low | [Mitigation approach] |
+
+### Dependencies
+- **External Dependencies**: [Third-party services, APIs]
+- **Internal Dependencies**: [Other epics, components]
+- **Resource Dependencies**: [Team availability, tools]
+
+---
+
+## ACCEPTANCE CRITERIA
+
+### Functional Criteria
+- [ ] [Functional requirement 1]
+- [ ] [Functional requirement 2]
+- [ ] [Functional requirement 3]
+
+### Technical Criteria
+- [ ] [Technical requirement 1]
+- [ ] [Technical requirement 2]
+- [ ] [Technical requirement 3]
+
+### Quality Criteria
+- [ ] All unit tests pass with [X]% coverage
+- [ ] All integration tests pass
+- [ ] Performance benchmarks met
+- [ ] Security requirements satisfied
+- [ ] Documentation updated
+
+---
+
+## DEFINITION OF DONE
+
+### Code Quality
+- [ ] Code review completed
+- [ ] All tests passing
+- [ ] Code coverage targets met
+- [ ] No critical security vulnerabilities
+
+### Documentation
+- [ ] Technical documentation updated
+- [ ] API documentation updated
+- [ ] User documentation updated (if applicable)
+- [ ] CLAUDE.md conventions followed
+
+### Deployment
+- [ ] Staging deployment successful
+- [ ] Production deployment plan reviewed
+- [ ] Rollback plan documented
+- [ ] Monitoring and alerting configured
+
+---
+
+## NOTES
+
+### Architecture Decisions
+- **Decision 1**: [Decision and rationale]
+- **Decision 2**: [Decision and rationale]
+
+### Lessons Learned
+- [Lesson 1]
+- [Lesson 2]
+
+### Future Considerations
+- [Future enhancement 1]
+- [Future enhancement 2]
+
+---
+
+## CHANGE LOG
+
+### [YYYY-MM-DD]
+- **Change**: [Description]
+- **Reason**: [Justification]
+- **Impact**: [Sprint/story impact]
+- **Updated By**: [Agent/User]

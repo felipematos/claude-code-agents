@@ -1,0 +1,187 @@
+# UI Testing Workflow Template
+
+## Overview
+This document defines the UI testing workflow for the project, including test design, execution, and reporting processes.
+
+## Test Environment
+- **Environment**: Staging
+- **Base URL**: [Set from .env.staging]
+- **Browser**: Chrome (latest stable)
+- **Automation Tool**: Puppeteer/Playwright
+
+## Test Categories
+
+### By Priority
+- **Critical**: Must pass before any deployment
+- **High**: Should pass for stable releases
+- **Medium**: Important for quality assurance
+- **Low**: Nice to have, run during full test cycles
+
+### By Type
+- **Smoke Tests**: Basic functionality verification
+- **Regression Tests**: Ensure existing features still work
+- **Feature Tests**: Validate new feature implementations
+- **End-to-End Tests**: Complete user journey validation
+
+## Test Design Process
+
+1. **Story Analysis**: Review user story and acceptance criteria
+2. **Test Planning**: Identify test scenarios and edge cases
+3. **Workflow Design**: Create step-by-step test procedures
+4. **Environment Setup**: Define preconditions and test data
+5. **Validation Points**: Specify assertions and expected results
+
+## Test Execution Modes
+
+### Quick Run
+- Execute only Critical priority tests
+- Used for pre-deployment validation
+- Target completion: < 10 minutes
+
+### Standard Run
+- Execute Critical + High priority tests
+- Used for regular CI/CD pipeline
+- Target completion: < 30 minutes
+
+### Full Run
+- Execute all tests regardless of priority
+- Used for comprehensive quality validation
+- Target completion: < 2 hours
+
+### Single Test
+- Execute specific test workflow
+- Used for debugging and development
+- Target completion: < 5 minutes
+
+## Test Workflow Structure
+
+```json
+{
+  "user_story_id": "US-YYYY-MM-DD-###",
+  "criticality": "Critical|High|Medium|Low",
+  "environment": "staging",
+  "test_name": "Descriptive test name",
+  "description": "What this test validates",
+  "preconditions": [
+    "List of setup requirements"
+  ],
+  "steps": [
+    {
+      "step_number": 1,
+      "action": "navigate|click|fill|select|upload|wait|assert|scroll|hover",
+      "target": "CSS selector or URL",
+      "value": "Input value if applicable",
+      "description": "Human-readable step description",
+      "expected_result": "What should happen"
+    }
+  ],
+  "cleanup_steps": [
+    {
+      "action": "cleanup action",
+      "description": "Cleanup description"
+    }
+  ],
+  "success_criteria": [
+    "List of overall success conditions"
+  ]
+}
+```
+
+## Test Execution Logging
+
+### Log Structure
+- **Test Execution ID**: Unique identifier
+- **Execution Metadata**: Timestamp, environment, browser info
+- **Step Results**: Individual step outcomes with timing
+- **Screenshots**: Captured on failures and key steps
+- **Performance Metrics**: Page load times, interaction delays
+- **Failure Details**: Error messages, stack traces, reproduction steps
+
+### Log Storage
+- **Location**: `.plan/ui_test_logs/`
+- **Format**: JSON with embedded metadata
+- **Screenshots**: Separate files referenced in logs
+- **Retention**: Keep logs for last 30 days
+
+## Failure Handling
+
+### On Test Failure
+1. **Capture Evidence**: Screenshot, error message, stack trace
+2. **Log Details**: Record exact failure conditions
+3. **Create Fix Task**: Generate urgent task for development team
+4. **Block Deployment**: For Critical/High priority failures
+5. **Notify Stakeholders**: Alert relevant team members
+
+### Fix Task Creation
+- **Priority**: Urgent for Critical/High test failures
+- **Details**: Include failure evidence and reproduction steps
+- **Assignment**: Route to appropriate development agent
+- **Tracking**: Link back to original user story
+
+## Quality Gates
+
+### Pre-Deployment
+- All Critical tests must pass
+- No High priority test failures
+- Performance benchmarks met
+- Security scan completed
+
+### Release Validation
+- Full test suite execution
+- Regression test verification
+- User acceptance criteria validation
+- Documentation updates completed
+
+## Continuous Improvement
+
+### Test Maintenance
+- Regular review of test effectiveness
+- Update tests for UI changes
+- Remove obsolete test cases
+- Optimize test execution time
+
+### Metrics Tracking
+- Test execution time trends
+- Failure rate analysis
+- Coverage assessment
+- User story validation completeness
+
+## Integration Points
+
+### With Development
+- Test design during story creation
+- Test execution after code implementation
+- Failure feedback loop for fixes
+
+### With Deployment
+- Pre-deployment validation gates
+- Post-deployment smoke tests
+- Rollback triggers on test failures
+
+### With Product Management
+- Test priority alignment with business value
+- User story acceptance criteria validation
+- Feature quality reporting
+
+## Tools and Technologies
+
+### Browser Automation
+- **Primary**: Puppeteer for Chrome automation
+- **Alternative**: Playwright for cross-browser testing
+- **Headless Mode**: Default for CI/CD execution
+- **Debug Mode**: Visual browser for development
+
+### Test Data Management
+- **Staging Data**: Dedicated test datasets
+- **Data Cleanup**: Automated cleanup after tests
+- **Data Privacy**: No production data in tests
+
+### Reporting
+- **Real-time**: Live test execution status
+- **Summary Reports**: Test run summaries with metrics
+- **Trend Analysis**: Historical test performance data
+- **Integration**: Results fed back to project management tools
+
+---
+
+**Note**: This workflow should be customized based on specific project requirements and technology stack.
