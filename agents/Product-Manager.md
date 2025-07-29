@@ -76,6 +76,7 @@ Tasks marked as URGENT or CRITICAL get highest priority.
     3.  Verify that only the current epic is broken down into sprints.
     4.  Update sprint timelines, dependencies, and resource allocation.
     5.  Maintain the change log with roadmap updates.
+    6. Every time that a sprint development is completed, add a Task to agent Cleaner to clean up old logs.
 
 ### 3. Bug Triage Workflow
 
