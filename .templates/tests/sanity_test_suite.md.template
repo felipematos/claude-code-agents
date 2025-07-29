@@ -1,0 +1,179 @@
+# Sanity Test Suite
+
+_Last updated: YYYY-MM-DD · Owner: Tester · Suite ID: SANITY-STAGING_
+
+## Overview
+Critical path validation before staging deployment. Focuses on business-critical flows and user journeys. Target execution time: 15-20 minutes.
+
+## Execution Triggers
+- Before staging deployment
+- After major feature integration
+- Before user acceptance testing
+- After configuration changes
+
+## Test Priority
+**Critical + High** - Essential business functionality that cannot fail
+
+---
+
+## Test Categories
+
+### 1. Business Critical Workflows
+**Priority**: Critical  
+**Estimated Time**: 8 minutes
+
+**End-to-End User Journeys**:
+- Complete user registration and onboarding
+- Primary business transaction flows
+- Payment processing (if applicable)
+- Data export/import functionality
+- Admin panel critical operations
+
+### 2. Integration Points
+**Priority**: Critical  
+**Estimated Time**: 5 minutes
+
+**External Dependencies**:
+- Third-party API integrations
+- Database transactions
+- File upload/download systems
+- Email/notification services
+- Authentication providers
+
+### 3. Security & Permissions
+**Priority**: High  
+**Estimated Time**: 4 minutes
+
+**Access Control**:
+- Role-based permissions
+- Data access restrictions
+- Session security
+- Input validation
+- CSRF protection
+
+### 4. Performance Benchmarks
+**Priority**: High  
+**Estimated Time**: 3 minutes
+
+**Performance Gates**:
+- Page load times < 3 seconds
+- API response times < 500ms
+- Database query performance
+- Memory usage within limits
+- No memory leaks detected
+
+---
+
+## Test Execution Plan
+
+### Phase 1: System Readiness (2 minutes)
+```bash
+# Verify environment health
+pytest tests/test_environment_health.py -v
+
+# Check service dependencies
+pytest tests/test_service_dependencies.py -v
+```
+
+### Phase 2: Critical Business Logic (8 minutes)
+```bash
+# Run business workflow tests
+pytest tests/ -m "sanity and business_critical" --tb=short
+
+# Execute UI critical paths
+npm run test:ui:sanity
+```
+
+### Phase 3: Integration & Security (7 minutes)
+```bash
+# Test integrations
+pytest tests/ -m "sanity and integration" --tb=short
+
+# Security validation
+pytest tests/ -m "sanity and security" --tb=short
+```
+
+### Phase 4: Performance Validation (3 minutes)
+```bash
+# Performance benchmarks
+pytest tests/ -m "sanity and performance" --tb=short
+
+# Load testing (light)
+npm run test:performance:sanity
+```
+
+---
+
+## Success Criteria
+
+### Must Pass (Deployment Blockers)
+- All Critical tests pass (100%)
+- All High priority tests pass (100%)
+- Performance benchmarks met
+- No security vulnerabilities detected
+- All integrations functional
+
+### Quality Gates
+- Total execution time under 20 minutes
+- No test flakiness (consistent results)
+- Code coverage maintained
+- No new critical issues introduced
+
+## Failure Response
+
+### Critical Test Failures
+1. **Immediate Actions**:
+   - Block staging deployment
+   - Create P0 fix tasks
+   - Notify development team
+   - Alert stakeholders
+
+2. **Investigation Process**:
+   - Capture failure evidence
+   - Identify root cause
+   - Estimate fix timeline
+   - Communicate impact
+
+### High Priority Test Failures
+1. **Assessment Required**:
+   - Evaluate business impact
+   - Determine if deployment can proceed
+   - Create fix tasks with appropriate priority
+   - Document known issues
+
+## Environment Configuration
+
+### Staging Environment Requirements
+- Production-like data volume
+- All external services connected
+- SSL certificates valid
+- Monitoring systems active
+- Backup systems functional
+
+### Test Data Requirements
+- Representative user accounts
+- Sample business data
+- Edge case scenarios
+- Performance test datasets
+- Security test vectors
+
+---
+
+## Reporting
+
+### Test Results
+- Detailed execution report
+- Performance metrics
+- Security scan results
+- Coverage analysis
+- Trend comparison
+
+### Stakeholder Communication
+- Pass/fail status to Product-Manager
+- Performance metrics to DevOps
+- Security findings to Security team
+- Business impact to Product-Owner
+
+---
+
+**Note**: This suite serves as the final quality gate before staging deployment. All failures must be addressed before proceeding to production validation.

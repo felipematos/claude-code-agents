@@ -1,0 +1,98 @@
+# Smoke Test Suite
+
+_Last updated: YYYY-MM-DD · Owner: Tester · Suite ID: SMOKE-SPRINT_
+
+## Overview
+Quick validation of core functionality after sprint completion. Target execution time: 5-10 minutes.
+
+## Execution Triggers
+- After sprint completion
+- Before staging deployment
+- After hotfix deployment
+
+## Test Priority
+**Critical Only** - Tests that must pass for basic system functionality
+
+---
+
+## Test Cases
+
+### 1. System Health Check
+**Priority**: Critical  
+**Estimated Time**: 2 minutes  
+**Test File**: `tests/test_system_health.py`
+
+**Validates**:
+- Application starts successfully
+- Database connectivity
+- Essential services are running
+- API endpoints respond
+
+### 2. Authentication Flow
+**Priority**: Critical  
+**Estimated Time**: 3 minutes  
+**Test File**: `tests/test_auth_smoke.py`
+
+**Validates**:
+- User can log in
+- Session management works
+- Basic authorization checks
+- Logout functionality
+
+### 3. Core Business Logic
+**Priority**: Critical  
+**Estimated Time**: 3 minutes  
+**Test File**: `tests/test_core_smoke.py`
+
+**Validates**:
+- Primary user workflows function
+- Data persistence works
+- Critical calculations are correct
+- Error handling for common scenarios
+
+### 4. UI Critical Paths
+**Priority**: Critical  
+**Estimated Time**: 2 minutes  
+**Test Type**: UI Automation
+
+**Validates**:
+- Main navigation works
+- Critical user actions complete
+- Forms submit successfully
+- Error messages display properly
+
+---
+
+## Success Criteria
+- All Critical tests must pass (100% pass rate)
+- Total execution time under 10 minutes
+- No system errors or crashes
+- Performance within acceptable thresholds
+
+## Failure Actions
+- Block staging deployment
+- Create urgent fix tasks
+- Notify development team
+- Escalate to Product-Manager
+
+## Execution Commands
+```bash
+# Run smoke test suite
+pytest tests/ -m "smoke" --tb=short
+
+# Run with coverage
+pytest tests/ -m "smoke" --cov=src --cov-report=term-missing
+
+# Run UI smoke tests
+npm run test:ui:smoke
+```
+
+## Environment Requirements
+- Staging environment must be available
+- Test data must be seeded
+- All services must be running
+- Database must be in clean state
+
+---
+
+**Note**: This suite is designed for speed and basic validation. For comprehensive testing, use the Regression Test Suite.

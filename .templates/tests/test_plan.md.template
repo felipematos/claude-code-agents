@@ -2,23 +2,194 @@
 
 _Last updated: YYYY-MM-DD · Owner: Tester_
 
-This document outlines the testing strategies and plans for this project.
+This document outlines the comprehensive testing strategy for the project, implementing a 4-tier testing approach aligned with the deployment pipeline.
 
 ---
 
-## Test Suites
+## Testing Strategy Overview
 
-### 1. Full Regression Suite (ID: REG-FULL)
+Our testing approach follows a structured 4-tier model that provides quality gates at each stage of the development and deployment process:
 
-This suite should be run before any new version is deployed. It ensures that all critical functionality is working as expected.
+**Unit Tests** → **Smoke Tests** → **Sanity Tests** → **Regression Tests**
 
-**Tests to run:**
-- `tests/test_core_functionality.py`
-- `tests/test_user_authentication.py`
+### Testing Principles
+- **Test-Driven Development (TDD)**: Write tests before implementation
+- **Shift-Left Testing**: Catch issues early in the development cycle
+- **Risk-Based Testing**: Focus on business-critical functionality
+- **Automated Quality Gates**: Prevent deployment of defective code
+- **Continuous Feedback**: Rapid feedback to development teams
 
-### 2. Smoke Test Suite (ID: SMOKE-01)
+---
 
-A quick suite to run after minor changes.
+## Test Suite Hierarchy
 
-**Tests to run:**
-- `tests/test_api_health_check.py`
+### 1. Unit Tests (Per Task)
+**Execution**: After each task implementation  
+**Duration**: 1-3 minutes per task  
+**Coverage**: Individual functions and components  
+**Priority**: All code changes
+
+**Purpose**:
+- Validate individual code units
+- Ensure TDD compliance
+- Catch logic errors early
+- Maintain code quality
+
+**Test Files**:
+- `tests/unit/test_*.py` (Python)
+- `tests/unit/*.test.js` (JavaScript)
+- Component-specific test files
+
+### 2. Smoke Test Suite (Per Sprint)
+**Execution**: After sprint completion  
+**Duration**: 5-10 minutes  
+**Coverage**: Core system functionality  
+**Priority**: Critical tests only
+
+**Purpose**:
+- Validate basic system health
+- Ensure core workflows function
+- Quick deployment readiness check
+- Sprint completion gate
+
+**Test Plan**: `smoke_test_suite.md`
+
+### 3. Sanity Test Suite (Pre-Staging)
+**Execution**: Before staging deployment  
+**Duration**: 15-20 minutes  
+**Coverage**: Business-critical paths  
+**Priority**: Critical + High priority tests
+
+**Purpose**:
+- Validate business-critical workflows
+- Test integration points
+- Security and performance checks
+- Staging deployment gate
+
+**Test Plan**: `sanity_test_suite.md`
+
+### 4. Regression Test Suite (Pre-Production)
+**Execution**: Before production deployment  
+**Duration**: 30-60 minutes  
+**Coverage**: Comprehensive system validation  
+**Priority**: All test levels
+
+**Purpose**:
+- Comprehensive functionality validation
+- Cross-browser and device testing
+- Performance and security validation
+- Production deployment gate
+
+**Test Plan**: `regression_test_suite.md`
+
+---
+
+## Test Execution Matrix
+
+| Test Level | Trigger | Duration | Priority | Pass Rate | Deployment Gate |
+|------------|---------|----------|----------|-----------|----------------|
+| Unit | Task completion | 1-3 min | All | 100% | Task approval |
+| Smoke | Sprint completion | 5-10 min | Critical | 100% | Staging ready |
+| Sanity | Pre-staging | 15-20 min | Critical + High | 100% | Staging deploy |
+| Regression | Pre-production | 30-60 min | All levels | 95%+ | Production deploy |
+
+---
+
+## Quality Gates
+
+### Task Level (Unit Tests)
+- All unit tests must pass
+- Code coverage ≥ 80% for new code
+- No critical code quality issues
+- TDD compliance verified
+
+### Sprint Level (Smoke Tests)
+- All critical functionality working
+- System health checks pass
+- Basic user workflows functional
+- No system crashes or errors
+
+### Staging Level (Sanity Tests)
+- Business-critical paths validated
+- Integration points functional
+- Security checks pass
+- Performance within thresholds
+
+### Production Level (Regression Tests)
+- Comprehensive functionality verified
+- Cross-platform compatibility confirmed
+- Performance benchmarks met
+- Security posture validated
+
+---
+
+## Test Environment Strategy
+
+### Development Environment
+- Unit test execution
+- Individual developer testing
+- Fast feedback loops
+- Mock external dependencies
+
+### Staging Environment
+- Smoke and sanity test execution
+- Production-like configuration
+- Real external integrations
+- Performance testing
+
+### Production Environment
+- Regression test execution
+- Final validation
+- Monitoring and alerting
+- Rollback capabilities
+
+---
+
+## Failure Response Protocols
+
+### Unit Test Failures
+- Block task completion
+- Immediate developer notification
+- Fix required before proceeding
+- Re-run tests after fix
+
+### Smoke Test Failures
+- Block staging deployment
+- Create urgent fix tasks
+- Notify development team
+- Sprint retrospective item
+
+### Sanity Test Failures
+- Block staging deployment
+- Escalate to Product-Manager
+- Risk assessment required
+- Stakeholder notification
+
+### Regression Test Failures
+- Block production deployment
+- Emergency response protocol
+- Executive notification
+- Go/no-go decision required
+
+---
+
+## Continuous Improvement
+
+### Metrics Tracking
+- Test execution times
+- Pass/fail rates by category
+- Defect escape rates
+- Coverage trends
+- Flaky test identification
+
+### Regular Reviews
+- Weekly test effectiveness review
+- Monthly test strategy assessment
+- Quarterly process optimization
+- Annual strategy alignment
+
+### Automation Enhancement
+- Increase test automation coverage
+- Optimize test execution speed
+- Improve test reliability
+- Enhance reporting capabilities

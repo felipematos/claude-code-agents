@@ -1,0 +1,117 @@
+# Human Requests
+
+_This file manages all human-system interactions including feature requests, bug reports, agent clarifications, and strategic decisions._
+
+---
+
+## 🔄 Pending Requests
+
+_Requests awaiting human response or action_
+
+### HITL-001: Clarification on API Key
+- **Type**: Agent Clarification
+- **Priority**: High
+- **Submitted By**: Task-Coder
+- **Task ID**: TASK-004
+- **Question**: The task requires integrating with a third-party API, but I cannot find the API key. Please provide the API key or specify where it should be stored.
+- **Context**: Working on user authentication feature
+- **Status**: Pending
+- **Human Response**: 
+  - _(Please add your response here)_
+
+### REQ-001: Add GitHub Login Support
+- **Type**: Feature Request
+- **Priority**: Medium
+- **Submitted By**: User
+- **Description**: It would be great if users could log in using their GitHub accounts in addition to email/password.
+- **Business Value**: Improved user experience and reduced friction
+- **Status**: Pending
+- **Assessment**: _(To be completed by Human-Concierge)_
+
+---
+
+## 🚀 In Progress
+
+_Requests currently being processed_
+
+### REQ-002: Dark Mode Implementation
+- **Type**: Feature Request
+- **Priority**: Low
+- **Submitted By**: User
+- **Description**: A dark mode would be easier on the eyes.
+- **Status**: In Progress
+- **Actions Taken**: Created TASK-005 with priority 1.5
+- **Assigned To**: UI-Test-Designer
+
+---
+
+## ✅ Resolved
+
+_Completed requests with outcomes_
+
+### HITL-000: Database Schema Clarification
+- **Type**: Agent Clarification
+- **Priority**: High
+- **Submitted By**: Task-Coder
+- **Question**: Should user preferences be stored in a separate table or as JSON in the users table?
+- **Status**: Resolved
+- **Human Response**: Use separate table for better normalization and query performance
+- **Actions Taken**: Updated database schema and created migration
+- **Resolved Date**: 2024-01-15
+
+---
+
+## 📋 Request Types
+
+### Agent Clarifications (HITL-XXX)
+- Technical questions from agents
+- Blocking issues requiring human input
+- Decision points needing stakeholder approval
+- **Fields**: Type, Priority, Submitted By, Task ID, Question, Context, Status, Human Response
+
+### Feature Requests (REQ-XXX)
+- New feature ideas
+- Enhancement suggestions
+- User feedback
+- **Fields**: Type, Priority, Submitted By, Description, Business Value, Status, Assessment
+
+### Bug Reports (BUG-XXX)
+- User-reported issues
+- System problems
+- Quality concerns
+- **Fields**: Type, Priority, Submitted By, Description, Steps to Reproduce, Expected vs Actual, Status, Investigation
+
+### Strategic Requests (STRAT-XXX)
+- Product direction questions
+- Roadmap adjustments
+- Priority changes
+- **Fields**: Type, Priority, Submitted By, Description, Impact Assessment, Status, Decision
+
+---
+
+## 📊 Priority Levels
+
+- **Critical**: Blocking production issues, security vulnerabilities
+- **High**: Blocking development, important features
+- **Medium**: Nice-to-have features, minor improvements
+- **Low**: Future considerations, cosmetic changes
+
+---
+
+## 🔄 Status Definitions
+
+- **Pending**: Awaiting human response or review
+- **In Progress**: Being actively processed or implemented
+- **Resolved**: Completed with documented outcome
+- **Archived**: Historical reference, no longer active
+- **Rejected**: Declined with reasoning provided
+
+---
+
+## 📝 Usage Guidelines
+
+1. **For Agents**: Create new entries in "Pending Requests" section
+2. **For Humans**: Respond in designated response fields
+3. **For Human-Concierge**: Process, assess, and route requests appropriately
+4. **Status Updates**: Move requests between sections as they progress
+5. **Archival**: Move old resolved requests to archive file quarterly
