@@ -84,6 +84,69 @@ Our testing approach follows a structured 4-tier model that provides quality gat
 
 ---
 
+## Test Execution Schedule
+
+### Tier 1: Unit Tests
+- **Trigger**: Every code commit
+- **Duration**: < 5 minutes
+- **Coverage**: Individual functions and methods
+- **Priority**: Critical path functions first
+- **Last Run**: 2024-01-15 16:45:00
+- **Status**: ✅ PASSED (247/247 tests)
+- **Coverage**: 94.2%
+- **Failed Tests**: None
+- **Recent Changes**: Added tests for JWT token validation
+
+### Tier 2: Smoke Tests
+- **Trigger**: After successful unit tests
+- **Duration**: 10-15 minutes
+- **Coverage**: Core functionality verification
+- **Priority**: Authentication, core workflows
+- **Last Run**: 2024-01-15 16:50:00
+- **Status**: ✅ PASSED (23/23 tests)
+- **Test Cases**:
+  - User login/logout flow
+  - API health checks
+  - Database connectivity
+  - Cache functionality
+  - File upload/download
+- **Environment**: Staging
+
+### Tier 3: Sanity Tests
+- **Trigger**: Before deployment to staging
+- **Duration**: 30-45 minutes
+- **Coverage**: End-to-end critical user journeys
+- **Priority**: User registration, payment flow, data integrity
+- **Last Run**: 2024-01-15 14:30:00
+- **Status**: ⚠️ PARTIAL (18/20 tests passed)
+- **Failed Tests**:
+  - Payment gateway timeout (TEST-019)
+  - Email notification delay (TEST-020)
+- **Test Scenarios**:
+  - Complete user onboarding journey
+  - E-commerce purchase flow
+  - Data export/import functionality
+  - Multi-user collaboration features
+  - Mobile responsiveness checks
+
+### Tier 4: Regression Tests
+- **Trigger**: Weekly scheduled runs (Sundays 2:00 AM)
+- **Duration**: 2-4 hours
+- **Coverage**: Full application testing
+- **Priority**: All features, edge cases, performance
+- **Last Run**: 2024-01-14 02:00:00
+- **Status**: ✅ PASSED (156/158 tests)
+- **Failed Tests**:
+  - Performance test: Page load > 3s (TEST-142)
+  - Cross-browser compatibility: IE11 layout (TEST-155)
+- **Performance Metrics**:
+  - Average response time: 245ms
+  - Memory usage: 128MB peak
+  - CPU utilization: 15% average
+- **Browser Coverage**: Chrome, Firefox, Safari, Edge
+
+---
+
 ## Test Execution Matrix
 
 | Test Level | Trigger | Duration | Priority | Pass Rate | Deployment Gate |

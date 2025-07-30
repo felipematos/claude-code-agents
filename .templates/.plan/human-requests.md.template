@@ -8,25 +8,65 @@ _This file manages all human-system interactions including feature requests, bug
 
 _Requests awaiting human response or action_
 
-### HITL-001: Clarification on API Key
-- **Type**: Agent Clarification
-- **Priority**: High
-- **Submitted By**: Task-Coder
-- **Task ID**: TASK-004
-- **Question**: The task requires integrating with a third-party API, but I cannot find the API key. Please provide the API key or specify where it should be stored.
-- **Context**: Working on user authentication feature
-- **Status**: Pending
-- **Human Response**: 
-  - _(Please add your response here)_
+### Agent Clarifications
+*Requests where agents need human input to proceed*
 
-### REQ-001: Add GitHub Login Support
-- **Type**: Feature Request
-- **Priority**: Medium
-- **Submitted By**: User
-- **Description**: It would be great if users could log in using their GitHub accounts in addition to email/password.
-- **Business Value**: Improved user experience and reduced friction
-- **Status**: Pending
-- **Assessment**: _(To be completed by Human-Concierge)_
+**REQ-001** | **Priority: High** | **Agent: Task-Coder** | **Created: 2024-01-15 09:30**
+- **Title:** Database schema validation for user profiles
+- **Description:** Need clarification on whether to use UUID or auto-increment for user IDs. Current implementation assumes UUID but legacy system uses auto-increment.
+- **Context:** Working on TASK-001 (User authentication endpoint)
+- **Blocking:** Authentication implementation
+- **Expected Response Time:** 2 hours
+
+**REQ-002** | **Priority: Medium** | **Agent: Tester** | **Created: 2024-01-15 11:15**
+- **Title:** Test data requirements for payment integration
+- **Description:** Need sample credit card numbers and test scenarios for payment gateway testing. Should we use Stripe test cards or create mock data?
+- **Context:** Testing payment flow for e-commerce feature
+- **Blocking:** Payment integration tests
+- **Expected Response Time:** 1 day
+
+---
+
+### Feature Requests
+*New functionality requests from stakeholders*
+
+**REQ-003** | **Priority: Medium** | **Stakeholder: Product Manager** | **Created: 2024-01-14 16:00**
+- **Title:** Dark mode toggle for dashboard
+- **Description:** Users are requesting a dark mode option for better usability during night hours. Should include system preference detection.
+- **Business Value:** Improved user experience, accessibility compliance
+- **Estimated Effort:** 3-5 days
+- **Dependencies:** UI component library update
+
+**REQ-004** | **Priority: Low** | **Stakeholder: Marketing Team** | **Created: 2024-01-13 14:30**
+- **Title:** Analytics dashboard for user engagement
+- **Description:** Need a dashboard to track user engagement metrics, session duration, and feature usage for marketing campaigns.
+- **Business Value:** Data-driven marketing decisions
+- **Estimated Effort:** 2 weeks
+- **Dependencies:** Analytics service integration
+
+---
+
+### Bug Reports
+*Issues that require human investigation*
+
+**REQ-005** | **Priority: Critical** | **Reporter: QA Team** | **Created: 2024-01-15 13:45**
+- **Title:** Memory leak in real-time notifications
+- **Description:** Application memory usage increases continuously when real-time notifications are enabled. Affects performance after 2-3 hours of usage.
+- **Steps to Reproduce:** 1. Enable notifications 2. Leave app open 3. Monitor memory usage
+- **Impact:** Performance degradation, potential crashes
+- **Environment:** Production, Chrome browser
+
+---
+
+### Strategic Requests
+*High-level decisions requiring human oversight*
+
+**REQ-006** | **Priority: High** | **Stakeholder: CTO** | **Created: 2024-01-12 10:00**
+- **Title:** Migration strategy for legacy API endpoints
+- **Description:** Need to decide on timeline and approach for deprecating v1 API endpoints. Current usage: 30% v1, 70% v2.
+- **Options:** 1. Gradual deprecation over 6 months 2. Immediate deprecation with 3-month notice
+- **Impact:** Client applications, backward compatibility
+- **Decision Deadline:** 2024-01-20
 
 ---
 
@@ -34,14 +74,47 @@ _Requests awaiting human response or action_
 
 _Requests currently being processed_
 
-### REQ-002: Dark Mode Implementation
-- **Type**: Feature Request
-- **Priority**: Low
-- **Submitted By**: User
-- **Description**: A dark mode would be easier on the eyes.
-- **Status**: In Progress
-- **Actions Taken**: Created TASK-005 with priority 1.5
-- **Assigned To**: UI-Test-Designer
+### Agent Clarifications
+*Currently being addressed*
+
+**REQ-007** | **Priority: Medium** | **Agent: Task-Coder** | **Created: 2024-01-14 15:20** | **Assigned: Senior Developer**
+- **Title:** Error handling strategy for third-party API failures
+- **Description:** How should the system behave when external APIs (payment, email) are unavailable? Need retry logic and fallback mechanisms.
+- **Status:** Under review with architecture team
+- **Expected Resolution:** 2024-01-16
+
+---
+
+### Feature Requests
+*Under development or review*
+
+**REQ-008** | **Priority: High** | **Stakeholder: Product Manager** | **Created: 2024-01-10 09:00** | **Assigned: Frontend Team**
+- **Title:** Multi-language support (i18n)
+- **Description:** Add support for Spanish and French languages. Priority markets for Q1 expansion.
+- **Status:** 60% complete - Spanish translation done, French in progress
+- **Expected Delivery:** 2024-01-25
+
+---
+
+### Bug Reports
+*Being investigated or fixed*
+
+**REQ-009** | **Priority: High** | **Reporter: Customer Support** | **Created: 2024-01-13 11:30** | **Assigned: Backend Team**
+- **Title:** Intermittent login failures on mobile devices
+- **Description:** Users report random login failures on mobile apps. Desktop works fine. Affects ~5% of mobile users.
+- **Status:** Root cause identified - session token expiry issue
+- **Expected Fix:** 2024-01-17
+
+---
+
+### Strategic Requests
+*Under consideration*
+
+**REQ-010** | **Priority: Medium** | **Stakeholder: CEO** | **Created: 2024-01-08 14:00** | **Assigned: Product Team**
+- **Title:** AI-powered feature recommendations
+- **Description:** Implement machine learning to suggest features to users based on usage patterns and preferences.
+- **Status:** Feasibility study in progress
+- **Expected Decision:** 2024-01-30
 
 ---
 
@@ -49,15 +122,47 @@ _Requests currently being processed_
 
 _Completed requests with outcomes_
 
-### HITL-000: Database Schema Clarification
-- **Type**: Agent Clarification
-- **Priority**: High
-- **Submitted By**: Task-Coder
-- **Question**: Should user preferences be stored in a separate table or as JSON in the users table?
-- **Status**: Resolved
-- **Human Response**: Use separate table for better normalization and query performance
-- **Actions Taken**: Updated database schema and created migration
-- **Resolved Date**: 2024-01-15
+### Agent Clarifications
+*Completed clarifications*
+
+**REQ-011** | **Priority: High** | **Agent: Tester** | **Created: 2024-01-12 10:15** | **Resolved: 2024-01-13 16:30**
+- **Title:** Test environment configuration for staging
+- **Description:** Needed clarification on database seeding and test data for staging environment.
+- **Resolution:** Use production data subset with anonymized PII. Automated seeding script created.
+- **Resolved By:** DevOps Team
+
+---
+
+### Feature Requests
+*Implemented features*
+
+**REQ-012** | **Priority: Medium** | **Stakeholder: UX Team** | **Created: 2024-01-05 11:00** | **Resolved: 2024-01-12 17:00**
+- **Title:** Improved search functionality with filters
+- **Description:** Enhanced search with category filters, date ranges, and sorting options.
+- **Resolution:** Implemented with Elasticsearch backend. 40% improvement in search relevance.
+- **Delivered In:** Release v2.1.0
+
+---
+
+### Bug Reports
+*Fixed issues*
+
+**REQ-013** | **Priority: Critical** | **Reporter: Production Monitoring** | **Created: 2024-01-11 22:15** | **Resolved: 2024-01-12 08:30**
+- **Title:** Database connection pool exhaustion
+- **Description:** Application became unresponsive due to database connection pool reaching maximum capacity.
+- **Resolution:** Increased pool size and implemented connection timeout. Added monitoring alerts.
+- **Root Cause:** Unclosed connections in batch processing jobs
+
+---
+
+### Strategic Requests
+*Decided items*
+
+**REQ-014** | **Priority: High** | **Stakeholder: Board of Directors** | **Created: 2024-01-03 09:00** | **Resolved: 2024-01-10 15:00**
+- **Title:** Cloud infrastructure migration timeline
+- **Description:** Decision needed on migrating from on-premise to AWS cloud infrastructure.
+- **Resolution:** Approved 6-month migration plan starting Q2 2024. Budget allocated: $150K.
+- **Decision By:** CTO and CFO
 
 ---
 

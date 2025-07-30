@@ -1,0 +1,54 @@
+[
+  {
+    "task_id": "task-001",
+    "title": "Setup Dashboard Infrastructure",
+    "description": "Create the basic dashboard structure with React components and Material-UI",
+    "status": "completed",
+    "priority": "high",
+    "assigned_to": "system",
+    "created_at": "2024-01-15T10:00:00Z",
+    "updated_at": "2024-01-15T14:30:00Z",
+    "estimated_hours": 8,
+    "actual_hours": 6,
+    "tags": ["frontend", "infrastructure"]
+  },
+  {
+    "task_id": "task-002",
+    "title": "Implement WebSocket Communication",
+    "description": "Add real-time communication between client and server using WebSockets",
+    "status": "in_progress",
+    "priority": "high",
+    "assigned_to": "developer",
+    "created_at": "2024-01-15T11:00:00Z",
+    "updated_at": "2024-01-15T16:45:00Z",
+    "estimated_hours": 4,
+    "actual_hours": 2,
+    "tags": ["backend", "websocket"]
+  },
+  {
+    "task_id": "task-003",
+    "title": "Add Notification System",
+    "description": "Implement toast notifications and browser notifications for real-time updates",
+    "status": "pending",
+    "priority": "medium",
+    "assigned_to": "developer",
+    "created_at": "2024-01-15T12:00:00Z",
+    "updated_at": "2024-01-15T12:00:00Z",
+    "estimated_hours": 3,
+    "actual_hours": 0,
+    "tags": ["frontend", "notifications"]
+  },
+  {
+    "task_id": "task-004",
+    "title": "Implement Dark Mode",
+    "description": "Add dark theme support with toggle functionality in settings",
+    "status": "blocked",
+    "priority": "low",
+    "assigned_to": "designer",
+    "created_at": "2024-01-15T13:00:00Z",
+    "updated_at": "2024-01-15T13:30:00Z",
+    "estimated_hours": 2,
+    "actual_hours": 1,
+    "tags": ["frontend", "ui"]
+  }
+]

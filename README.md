@@ -21,6 +21,7 @@ This repository contains a collection of specialized AI agents that work togethe
 - **UI-Test-Designer**: Designs comprehensive UI test workflows
 - **UI-Tester**: Executes UI tests with detailed logging and failure handling
 - **Human-Concierge**: Manages human-agent interaction, processes all human requests including feature requests, bug reports, agent clarifications, and strategic decisions
+- **Dashboard-Manager**: Manages the web-based dashboard service lifecycle
 
 ## Key Features
 
@@ -103,6 +104,57 @@ To use these agents with Claude Code:
 
 2.  Restart Claude Code.
 
+## Dashboard
+
+The Claude Code Agents Dashboard provides a web-based interface for monitoring and managing your agents, tasks, and human requests.
+
+### Quick Start
+
+```bash
+# Navigate to dashboard directory
+cd dashboard
+
+# Start the dashboard (installs dependencies automatically)
+./start-dashboard.sh
+
+# Or start manually
+npm install
+npm start
+```
+
+The dashboard will be available at:
+- **Client**: http://localhost:3001
+- **Server API**: http://localhost:3002
+
+### Dashboard Features
+
+- **Real-time Task Monitoring**: View and manage tasks with drag-and-drop functionality
+- **Human Request Management**: Handle and respond to human input requests
+- **Roadmap Visualization**: View and edit project roadmaps
+- **Agent Status**: Monitor agent activity and system health
+- **WebSocket Integration**: Real-time updates without page refresh
+
+### Dashboard-Manager Agent
+
+The Dashboard-Manager agent can automatically start, stop, and monitor the dashboard service:
+
+```json
+{
+  "id": "DASHBOARD-START-001",
+  "type": "dashboard_start",
+  "agent": "Dashboard-Manager",
+  "priority": "high",
+  "payload": {
+    "title": "Start Claude Code Agents Dashboard",
+    "action": "start",
+    "client_port": 3001,
+    "server_port": 3002
+  }
+}
+```
+
+See `agents/Dashboard-Manager.md` for complete agent documentation.
+
 ## Usage Instructions
 
 ### Submitting Feature and Fix Requests
@@ -143,4 +195,14 @@ Templates for files that will be used by the agents (like the main orchestrator 
 - `deployment_workflow.md.template` - Deployment process with UI testing integration and failure handling.
 - `task_schema.json.template` - Complete task schema including UI test task types and structure.
 
+## Security Notes
 
+- **Agent Tools** - Most agents have access to all tools by default. Change this in your agent .md file by adding a `tools` section for enhanced secutiry. Check Claude Code docs.
+
+- **Full Permissions** - Claude Code instances triggered by our system have the --dangerouslyskippermissions flag set to true. This is needed for system to work, and permit Claude Code to access to all system resources and tools without restrictions, but introduces risks, that can lead to security breaches or unexpected bad behaviour, including data loss. 
+
+- **We recommend some good practices:**
+    - Use Git cloud providers (Github/Gitlab/Bitbucket), and commit changes regularly. Out Task-Coder is trained to commit after every succeded task, but you need to initialize the repository first.
+    - Monitor Claude Code's behaviour and logs closely.
+    - Restrict access of tools to only those that are necessary for the agent to perform its tasks.
+    - Regularly review and update tool access permissions.

@@ -19,7 +19,12 @@
         "urgent_fix",
         "deployment",
         "cleanup",
-        "human_input_required"
+        "human_input_required",
+        "dashboard_start",
+        "dashboard_stop",
+        "dashboard_restart",
+        "dashboard_health_check",
+        "dashboard_configure"
       ],
       "description": "Type of task to be performed"
     },
@@ -36,7 +41,8 @@
         "UI-Test-Designer",
         "UI-Tester",
         "Product-Manager",
-        "Cleaner"
+        "Cleaner",
+        "Dashboard-Manager"
       ],
       "description": "Agent responsible for executing this task"
     },
@@ -207,6 +213,24 @@
         "failure_details": "Login button not responding to click events",
         "blocking_deployment": true,
         "created_by": "deployment_workflow"
+      }
+    },
+    {
+      "id": "TASK-005",
+      "type": "dashboard_start",
+      "status": "pending",
+      "agent": "Dashboard-Manager",
+      "priority": "medium",
+      "created_at": "2024-01-15T09:00:00Z",
+      "updated_at": "2024-01-15T09:00:00Z",
+      "depends_on": [],
+      "payload": {
+        "title": "Start Claude Code Agents Dashboard",
+        "description": "Initialize and start the web-based management dashboard",
+        "action": "start",
+        "client_port": 3001,
+        "server_port": 3002,
+        "auto_restart": true
       }
     }
   ]
