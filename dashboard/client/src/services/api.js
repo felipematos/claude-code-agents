@@ -1,136 +1,161 @@
-import axios from 'axios';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3002';
+const API_BASE_URL = 'http://localhost:3002/api';
 
 class ApiService {
   constructor() {
-    this.client = axios.create({
-      baseURL: `${API_BASE_URL}/api`,
-      timeout: 10000,
+    this.baseURL = API_BASE_URL;
+  }
+  async get(endpoint) {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ${endpoint}`);
+    }
+    return response.json();
+  }
+
+  async post(endpoint, data) {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify(data),
     });
-
-    // Request interceptor
-    this.client.interceptors.request.use(
-      (config) => {
-        console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
-        return config;
-      },
-      (error) => {
-        console.error('API Request Error:', error);
-        return Promise.reject(error);
-      }
-    );
-
-    // Response interceptor
-    this.client.interceptors.response.use(
-      (response) => {
-        console.log(`API Response: ${response.status} ${response.config.url}`);
-        return response;
-      },
-      (error) => {
-        console.error('API Response Error:', error.response?.data || error.message);
-        return Promise.reject(error);
-      }
-    );
+    if (!response.ok) {
+      throw new Error(`Failed to post to ${endpoint}`);
+    }
+    return response.json();
   }
 
-  // Health check
+  async put(endpoint, data) {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to put to ${endpoint}`);
+    }
+    return response.json();
+  }
+
+  async getRepositoryType() {
+    try {
+      const response = await this.get('/repo-type');
+      return response.type;
+    } catch (error) {
+      console.error('Failed to get repository type:', error);
+      return 'unknown';
+    }
+  }
+
+  async getSetupStatus() {
+    return this.get('/setup/status');
+  }
+
+  async simulateSetup(setupData) {
+    return this.post('/setup/simulate', setupData);
+  }
+
+  async executeSetup(setupData) {
+    return this.post('/setup/execute', setupData);
+  }
+
   async healthCheck() {
-    try {
-      const response = await this.client.get('/health');
-      return response.data;
-    } catch (error) {
-      throw new Error('Health check failed');
-    }
+    return this.get('/health');
   }
 
-  // Tasks API
   async getTasks() {
-    try {
-      const response = await this.client.get('/tasks');
-      return response.data;
-    } catch (error) {
-      throw new Error('Failed to fetch tasks');
-    }
+    return this.get('/tasks');
   }
 
   async updateTask(taskId, taskData) {
-    try {
-      const response = await this.client.put(`/tasks/${taskId}`, taskData);
-      return response.data;
-    } catch (error) {
-      throw new Error(`Failed to update task ${taskId}`);
-    }
+    return this.put(`/tasks/${taskId}`, taskData);
   }
 
   async createTask(taskData) {
-    try {
-      const response = await this.client.post('/tasks', taskData);
-      return response.data;
-    } catch (error) {
-      throw new Error('Failed to create task');
-    }
+    return this.post('/tasks', taskData);
   }
 
-  // Human Requests API
   async getHumanRequests() {
-    try {
-      const response = await this.client.get('/human-requests');
-      return response.data;
-    } catch (error) {
+    const response = await fetch(`${API_BASE_URL}/human-requests`);
+    if (!response.ok) {
       throw new Error('Failed to fetch human requests');
     }
+    return response.text();
   }
 
   async updateHumanRequests(content) {
-    try {
-      const response = await this.client.put('/human-requests', { content });
-      return response.data;
-    } catch (error) {
+    const response = await fetch(`${API_BASE_URL}/human-requests`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'text/plain',
+      },
+      body: content,
+    });
+    if (!response.ok) {
       throw new Error('Failed to update human requests');
     }
+    return response.text();
   }
 
-  // Roadmap API
-  async getRoadmap() {
-    try {
-      const response = await this.client.get('/roadmap');
-      return response.data;
-    } catch (error) {
-      throw new Error('Failed to fetch roadmap');
+  parseHumanRequests(content) {
+    const sections = {
+      pending: [],
+      in_progress: [],
+      completed: []
+    };
+
+    const lines = content.split('\n');
+    let currentSection = null;
+
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      
+      // Check for section headers
+      if (trimmedLine.includes('## Pending Requests')) {
+        currentSection = 'pending';
+        continue;
+      } else if (trimmedLine.includes('## In Progress')) {
+        currentSection = 'in_progress';
+        continue;
+      } else if (trimmedLine.includes('## Completed')) {
+        currentSection = 'completed';
+        continue;
+      }
+
+      // Parse request items
+      if (currentSection && trimmedLine.startsWith('- ')) {
+        const requestText = trimmedLine.substring(2);
+        const id = `${currentSection}_${sections[currentSection].length + 1}`;
+        
+        sections[currentSection].push({
+          id,
+          text: requestText,
+          status: currentSection,
+          timestamp: new Date().toISOString()
+        });
+      }
     }
+
+    return sections;
+  }
+
+  async getRoadmap() {
+    return this.get('/roadmap');
   }
 
   async updateRoadmap(content) {
-    try {
-      const response = await this.client.put('/roadmap', { content });
-      return response.data;
-    } catch (error) {
-      throw new Error('Failed to update roadmap');
-    }
+    return this.put('/roadmap', { content });
   }
 
-  // User Stories API
   async getUserStories() {
-    try {
-      const response = await this.client.get('/user-stories');
-      return response.data;
-    } catch (error) {
-      throw new Error('Failed to fetch user stories');
-    }
+    return this.get('/user-stories');
   }
 
-  // Dashboard initialization
   async initializeDashboard() {
-    try {
-      const response = await this.client.post('/initialize');
-      return response.data;
-    } catch (error) {
-      throw new Error('Failed to initialize dashboard');
-    }
+    return this.post('/initialize');
   }
 
   // Utility methods
@@ -194,56 +219,9 @@ class ApiService {
     return stats;
   }
 
-  // Human requests parsing helpers
-  parseHumanRequests(content) {
-    const sections = {
-      pending: [],
-      in_progress: [],
-      resolved: []
-    };
 
-    // Handle non-string content
-    if (!content || typeof content !== 'string') {
-      console.warn('parseHumanRequests received non-string content:', content);
-      return sections;
-    }
-
-    // Simple parsing - in a real implementation, you'd use a proper markdown parser
-    const lines = content.split('\n');
-    let currentSection = null;
-    let currentRequest = null;
-
-    lines.forEach(line => {
-      if (line.includes('🔄 Pending Requests')) {
-        currentSection = 'pending';
-      } else if (line.includes('🚀 In Progress')) {
-        currentSection = 'in_progress';
-      } else if (line.includes('✅ Resolved')) {
-        currentSection = 'resolved';
-      } else if (line.startsWith('### ') && currentSection) {
-        if (currentRequest) {
-          sections[currentSection].push(currentRequest);
-        }
-        currentRequest = {
-          id: line.replace('### ', '').split(':')[0],
-          title: line.replace('### ', ''),
-          details: []
-        };
-      } else if (currentRequest && line.trim()) {
-        currentRequest.details.push(line);
-      }
-    });
-
-    // Add the last request
-    if (currentRequest && currentSection) {
-      sections[currentSection].push(currentRequest);
-    }
-
-    return sections;
-  }
 }
 
-// Create and export a singleton instance
-const apiService = new ApiService();
-export { apiService as ApiService };
-export default apiService;
+const api = new ApiService();
+export { api };
+export default ApiService;

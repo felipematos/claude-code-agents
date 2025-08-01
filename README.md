@@ -22,6 +22,7 @@ This repository contains a collection of specialized AI agents that work togethe
 - **UI-Tester**: Executes UI tests with detailed logging and failure handling
 - **Human-Concierge**: Manages human-agent interaction, processes all human requests including feature requests, bug reports, agent clarifications, and strategic decisions
 - **Dashboard-Manager**: Manages the web-based dashboard service lifecycle
+- **Cleaner**: Performs system maintenance, cleans up logs, and resolves state inconsistencies.
 
 ## Key Features
 

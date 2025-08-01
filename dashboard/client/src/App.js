@@ -22,7 +22,9 @@ import {
   Divider,
   IconButton,
   Badge,
-  Chip
+  Chip,
+  CircularProgress,
+  Button
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -46,10 +48,11 @@ import Templates from './components/Templates';
 import Tests from './components/Tests';
 import Settings from './components/Settings';
 import NotificationPanel from './components/NotificationPanel';
+import Setup from './components/Setup';
 
 // Import services
 import { WebSocketService } from './services/websocket';
-import { ApiService } from './services/api';
+import { api } from './services/api';
 
 const drawerWidth = 240;
 
@@ -76,55 +79,74 @@ const createAppTheme = (darkMode) => createTheme({
 
 function App() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [currentPath, setCurrentPath] = useState('/dashboard');
-  const [connectionStatus, setConnectionStatus] = useState('disconnected');
-  const [pendingRequests, setPendingRequests] = useState(0);
-  const [activeTasks, setActiveTasks] = useState(0);
   const [darkMode, setDarkMode] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState('disconnected');
+  const [activeTasks, setActiveTasks] = useState([]);
+  const [pendingRequests, setPendingRequests] = useState(0);
   const [showNotificationPanel, setShowNotificationPanel] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [repositoryType, setRepositoryType] = useState(null);
+  const [currentPath, setCurrentPath] = useState('/dashboard');
 
   useEffect(() => {
-    // Load settings from localStorage
-    const savedSettings = localStorage.getItem('dashboard-settings');
-    if (savedSettings) {
-      const settings = JSON.parse(savedSettings);
-      setDarkMode(settings.darkMode || false);
-    }
+    // Check repository type first
+    const checkRepositoryType = async () => {
+      try {
+        const repoType = await api.getRepositoryType();
+        setRepositoryType(repoType);
+        
+        if (repoType === 'existing_project') {
+          // Load settings from localStorage
+          const savedSettings = localStorage.getItem('dashboard-settings');
+          if (savedSettings) {
+            const settings = JSON.parse(savedSettings);
+            setDarkMode(settings.darkMode || false);
+          }
 
-    // Initialize WebSocket connection
-    WebSocketService.connect();
-    
-    WebSocketService.onMessage((data) => {
-      console.log('WebSocket message:', data);
-      // Handle real-time updates here
-      if (data.type === 'task_update') {
-        addNotification(`Task updated: ${data.task?.title || 'Unknown task'}`, 'task');
-        loadDashboardData(); // Refresh data
-      } else if (data.type === 'human_request_update') {
-        addNotification('Human requests updated', 'human_request');
-        loadDashboardData(); // Refresh data
+          // Initialize WebSocket connection
+          WebSocketService.connect();
+          
+          WebSocketService.onMessage((data) => {
+            console.log('WebSocket message:', data);
+            // Handle real-time updates here
+            if (data.type === 'task_update') {
+              addNotification(`Task updated: ${data.task?.title || 'Unknown task'}`, 'task');
+              loadDashboardData(); // Refresh data
+            } else if (data.type === 'human_request_update') {
+              addNotification('Human requests updated', 'human_request');
+              loadDashboardData(); // Refresh data
+            }
+          });
+
+          WebSocketService.onStatusChange((status) => {
+            setConnectionStatus(status);
+            if (status === 'connected') {
+              addNotification('Connected to server', 'success');
+            } else if (status === 'disconnected') {
+              addNotification('Disconnected from server', 'warning');
+            } else if (status === 'reconnecting') {
+              addNotification('Reconnecting to server...', 'info');
+            }
+          });
+
+          // Load initial data
+          loadDashboardData();
+          
+          // Add a welcome notification
+          setTimeout(() => {
+            addNotification('Welcome to Agent Squad Dashboard!', 'info');
+          }, 2000);
+        }
+      } catch (error) {
+        console.error('Failed to check repository type:', error);
+        setRepositoryType('unknown');
+      } finally {
+        setIsLoading(false);
       }
-    });
+    };
 
-    WebSocketService.onStatusChange((status) => {
-      setConnectionStatus(status);
-      if (status === 'connected') {
-        addNotification('Connected to server', 'success');
-      } else if (status === 'disconnected') {
-        addNotification('Disconnected from server', 'warning');
-      } else if (status === 'reconnecting') {
-        addNotification('Reconnecting to server...', 'info');
-      }
-    });
-
-    // Load initial data
-    loadDashboardData();
-    
-    // Add a welcome notification
-    setTimeout(() => {
-      addNotification('Welcome to Agent Squad Dashboard!', 'info');
-    }, 2000);
+    checkRepositoryType();
 
     // Listen for settings changes
     const handleSettingsChange = () => {
@@ -204,14 +226,14 @@ function App() {
 
   const loadDashboardData = async () => {
     try {
-      const tasks = await ApiService.getTasks();
+      const tasks = await api.getTasks();
       const activeTasks = tasks.filter(task => 
         task.status === 'in_progress' || task.status === 'pending'
       ).length;
       setActiveTasks(activeTasks);
 
-      const requestsContent = await ApiService.getHumanRequests();
-      const parsedRequests = ApiService.parseHumanRequests(requestsContent);
+      const requestsContent = await api.getHumanRequests();
+      const parsedRequests = api.parseHumanRequests(requestsContent);
       const pendingCount = parsedRequests.pending ? parsedRequests.pending.length : 0;
       setPendingRequests(pendingCount);
     } catch (error) {
@@ -306,115 +328,296 @@ function App() {
     </div>
   );
 
-  return (
-    <ThemeProvider theme={createAppTheme(darkMode)}>
-      <CssBaseline />
-      <Router>
-        <Box sx={{ display: 'flex' }}>
-          <AppBar
-            position="fixed"
-            sx={{
-              width: { sm: `calc(100% - ${drawerWidth}px)` },
-              ml: { sm: `${drawerWidth}px` },
-            }}
-          >
-            <Toolbar>
-              <IconButton
-                color="inherit"
-                aria-label="open drawer"
-                edge="start"
-                onClick={handleDrawerToggle}
-                sx={{ mr: 2, display: { sm: 'none' } }}
-              >
-                <MenuIcon />
-              </IconButton>
-              <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-                Agent Squad
-              </Typography>
-              <Chip
-                label={connectionStatus}
-                color={connectionStatus === 'connected' ? 'success' : 'error'}
-                size="small"
-                sx={{ mr: 2 }}
-              />
-              <IconButton color="inherit" onClick={() => setShowNotificationPanel(true)}>
-                <Badge badgeContent={notifications.length} color="error">
-                  <NotificationsIcon />
-                </Badge>
-              </IconButton>
-            </Toolbar>
-          </AppBar>
-          <Box
-            component="nav"
-            sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-            aria-label="mailbox folders"
-          >
-            <Drawer
-              variant="temporary"
-              open={mobileOpen}
-              onClose={handleDrawerToggle}
-              ModalProps={{
-                keepMounted: true,
-              }}
-              sx={{
-                display: { xs: 'block', sm: 'none' },
-                '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-              }}
-            >
-              {drawer}
-            </Drawer>
-            <Drawer
-              variant="permanent"
-              sx={{
-                display: { xs: 'none', sm: 'block' },
-                '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-              }}
-              open
-            >
-              {drawer}
-            </Drawer>
-          </Box>
-          <Box
-            component="main"
-            sx={{
-              flexGrow: 1,
-              p: 3,
-              width: { sm: `calc(100% - ${drawerWidth}px)` },
-            }}
-          >
-            <Toolbar />
-            <Routes>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/tasks" element={<TaskBoard />} />
-              <Route path="/requests" element={<HumanRequests />} />
-              <Route path="/roadmap" element={<Roadmap />} />
-              <Route path="/templates" element={<Templates />} />
-              <Route path="/tests" element={<Tests />} />
-              <Route path="/settings" element={<Settings />} />
-            </Routes>
-          </Box>
+  if (isLoading) {
+    return (
+      <ThemeProvider theme={createAppTheme(darkMode)}>
+        <CssBaseline />
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+          <CircularProgress />
         </Box>
-        <Toaster
-          position="bottom-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#363636',
-              color: '#fff',
-            },
-          }}
-        />
-        <NotificationPanel
-          open={showNotificationPanel}
-          onClose={() => setShowNotificationPanel(false)}
-          notifications={notifications}
-          onClearNotification={clearNotification}
-          onClearAll={clearAllNotifications}
-        />
-      </Router>
-    </ThemeProvider>
-  );
+      </ThemeProvider>
+    );
+  }
+
+  switch (repositoryType) {
+    case 'template':
+      // DEMO MODE: Show the normal dashboard home (limited data from templates)
+      // with a button to launch the Setup Wizard manually. Do not auto-run Setup.
+      return (
+        <ThemeProvider theme={createAppTheme(darkMode)}>
+          <CssBaseline />
+          <Router>
+            <Box sx={{ display: 'flex' }}>
+              <AppBar
+                position="fixed"
+                sx={{
+                  width: { sm: `calc(100% - ${drawerWidth}px)` },
+                  ml: { sm: `${drawerWidth}px` },
+                }}
+              >
+                <Toolbar>
+                  <IconButton
+                    color="inherit"
+                    aria-label="open drawer"
+                    edge="start"
+                    onClick={handleDrawerToggle}
+                    sx={{ mr: 2, display: { sm: 'none' } }}
+                  >
+                    <MenuIcon />
+                  </IconButton>
+                  <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+                    Agent Squad (Demo Mode)
+                  </Typography>
+                  <Chip
+                    label="demo mode"
+                    color="warning"
+                    size="small"
+                    sx={{ mr: 2, textTransform: 'uppercase' }}
+                  />
+                  <IconButton color="inherit" onClick={() => setShowNotificationPanel(true)}>
+                    <Badge badgeContent={notifications.length} color="error">
+                      <NotificationsIcon />
+                    </Badge>
+                  </IconButton>
+                </Toolbar>
+              </AppBar>
+
+              <Box
+                component="nav"
+                sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+                aria-label="mailbox folders"
+              >
+                <Drawer
+                  variant="temporary"
+                  open={mobileOpen}
+                  onClose={handleDrawerToggle}
+                  ModalProps={{ keepMounted: true }}
+                  sx={{
+                    display: { xs: 'block', sm: 'none' },
+                    '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+                  }}
+                >
+                  {drawer}
+                </Drawer>
+                <Drawer
+                  variant="permanent"
+                  sx={{
+                    display: { xs: 'none', sm: 'block' },
+                    '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+                  }}
+                  open
+                >
+                  {drawer}
+                </Drawer>
+              </Box>
+
+              <Box
+                component="main"
+                sx={{
+                  flexGrow: 1,
+                  p: 3,
+                  width: { sm: `calc(100% - ${drawerWidth}px)` },
+                }}
+              >
+                <Toolbar />
+                {/* Home dashboard content with a button to start setup wizard in demo mode */}
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="h4" gutterBottom>
+                    Claude Code Agents Dashboard
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 800 }}>
+                    Running in demo mode. Data is read from templates and writes are simulated.
+                    Click the button below to launch the Setup Wizard. It will simulate all actions and show a full step-by-step report of what would run in a real repository.
+                  </Typography>
+                  <Box sx={{ mt: 2 }}>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      size="large"
+                      onClick={() => {
+                        // Navigate to a temporary route that renders the Setup wizard
+                        // strictly on demand in demo mode.
+                        // We keep routing consistent rather than imperatively re-rendering root.
+                        window.history.pushState({}, '', '/setup');
+                        window.dispatchEvent(new PopStateEvent('popstate'));
+                      }}
+                    >
+                      Run Setup Wizard (Demo)
+                    </Button>
+                  </Box>
+                </Box>
+
+                <Routes>
+                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/tasks" element={<TaskBoard />} />
+                  <Route path="/requests" element={<HumanRequests />} />
+                  <Route path="/roadmap" element={<Roadmap />} />
+                  <Route path="/templates" element={<Templates />} />
+                  <Route path="/tests" element={<Tests />} />
+                  <Route path="/settings" element={<Settings />} />
+                  {/* Render Setup only when user navigates explicitly */}
+                  <Route path="/setup" element={<Setup onSetupComplete={() => window.location.reload()} />} />
+                </Routes>
+              </Box>
+            </Box>
+
+            <Toaster
+              position="bottom-right"
+              toastOptions={{
+                duration: 4000,
+                style: { background: '#363636', color: '#fff' },
+              }}
+            />
+            <NotificationPanel
+              open={showNotificationPanel}
+              onClose={() => setShowNotificationPanel(false)}
+              notifications={notifications}
+              onClearNotification={(id) => setNotifications(prev => prev.filter(n => n.id !== id))}
+              onClearAll={() => {
+                setNotifications([]);
+              }}
+            />
+          </Router>
+        </ThemeProvider>
+      );
+    case 'new_project':
+      // NOT DEMO MODE: For new projects, keep auto-running Setup Wizard as before.
+      return (
+        <ThemeProvider theme={createAppTheme(darkMode)}>
+          <CssBaseline />
+          <Setup onSetupComplete={() => window.location.reload()} />
+        </ThemeProvider>
+      );
+    case 'existing_project':
+      return (
+        <ThemeProvider theme={createAppTheme(darkMode)}>
+          <CssBaseline />
+          <Router>
+            <Box sx={{ display: 'flex' }}>
+              <AppBar
+                position="fixed"
+                sx={{
+                  width: { sm: `calc(100% - ${drawerWidth}px)` },
+                  ml: { sm: `${drawerWidth}px` },
+                }}
+              >
+                <Toolbar>
+                  <IconButton
+                    color="inherit"
+                    aria-label="open drawer"
+                    edge="start"
+                    onClick={handleDrawerToggle}
+                    sx={{ mr: 2, display: { sm: 'none' } }}
+                  >
+                    <MenuIcon />
+                  </IconButton>
+                  <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+                    Agent Squad
+                  </Typography>
+                  <Chip
+                    label={connectionStatus}
+                    color={connectionStatus === 'connected' ? 'success' : 'error'}
+                    size="small"
+                    sx={{ mr: 2 }}
+                  />
+                  <IconButton color="inherit" onClick={() => setShowNotificationPanel(true)}>
+                    <Badge badgeContent={notifications.length} color="error">
+                      <NotificationsIcon />
+                    </Badge>
+                  </IconButton>
+                </Toolbar>
+              </AppBar>
+              <Box
+                component="nav"
+                sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+                aria-label="mailbox folders"
+              >
+                <Drawer
+                  variant="temporary"
+                  open={mobileOpen}
+                  onClose={handleDrawerToggle}
+                  ModalProps={{
+                    keepMounted: true,
+                  }}
+                  sx={{
+                    display: { xs: 'block', sm: 'none' },
+                    '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+                  }}
+                >
+                  {drawer}
+                </Drawer>
+                <Drawer
+                  variant="permanent"
+                  sx={{
+                    display: { xs: 'none', sm: 'block' },
+                    '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+                  }}
+                  open
+                >
+                  {drawer}
+                </Drawer>
+              </Box>
+              <Box
+                component="main"
+                sx={{
+                  flexGrow: 1,
+                  p: 3,
+                  width: { sm: `calc(100% - ${drawerWidth}px)` },
+                }}
+              >
+                <Toolbar />
+                <Routes>
+                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/tasks" element={<TaskBoard />} />
+                  <Route path="/requests" element={<HumanRequests />} />
+                  <Route path="/roadmap" element={<Roadmap />} />
+                  <Route path="/templates" element={<Templates />} />
+                  <Route path="/tests" element={<Tests />} />
+                  <Route path="/settings" element={<Settings />} />
+                </Routes>
+              </Box>
+            </Box>
+            <Toaster
+              position="bottom-right"
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  background: '#363636',
+                  color: '#fff',
+                },
+              }}
+            />
+            <NotificationPanel
+              open={showNotificationPanel}
+              onClose={() => setShowNotificationPanel(false)}
+              notifications={notifications}
+              onClearNotification={clearNotification}
+              onClearAll={clearAllNotifications}
+            />
+          </Router>
+        </ThemeProvider>
+      );
+    case 'unknown':
+      return (
+        <ThemeProvider theme={createAppTheme(darkMode)}>
+          <CssBaseline />
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+            <Typography>Error loading repository information</Typography>
+          </Box>
+        </ThemeProvider>
+      );
+    default:
+      return (
+        <ThemeProvider theme={createAppTheme(darkMode)}>
+          <CssBaseline />
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+            <Typography>Loading repository information...</Typography>
+          </Box>
+        </ThemeProvider>
+      );
+  }
 }
 
 export default App;

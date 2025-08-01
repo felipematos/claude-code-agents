@@ -8,7 +8,7 @@ This project uses a comprehensive multi-agent system to implement Test-Driven De
 
 On every run, you MUST follow this sequence (except when user explicitly asks you to ignore the agent system):
 
-1. **Read Current State**: Always start by reading `tasks.json` to understand the current project state
+1. **Read Current State**: Always start by reading `tasks.json` in `.plan` directory to understand the current project state
 2. **Find Next Task**: Identify the next task that needs attention based on priority and dependencies
 3. **Dispatch Agent**: Call the appropriate agent to handle the task
 4. **Inform Progress**: Track task completion status and inform user (concisely).

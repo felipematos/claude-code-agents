@@ -26,7 +26,7 @@ import {
   PlayArrow as PlayArrowIcon
 } from '@mui/icons-material';
 import { WebSocketService } from '../services/websocket';
-import { ApiService } from '../services/api';
+import { api } from '../services/api';
 
 function Settings() {
   const [settings, setSettings] = useState({
@@ -81,7 +81,7 @@ function Settings() {
 
   const checkServerHealth = async () => {
     try {
-      const health = await ApiService.getHealth();
+      const health = await api.getHealth();
       setServerHealth(health);
     } catch (error) {
       setServerHealth({ status: 'error', message: 'Server unreachable' });

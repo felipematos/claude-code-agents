@@ -50,7 +50,7 @@ import {
   Settings as SettingsIcon,
   Close as CloseIcon
 } from '@mui/icons-material';
-import { ApiService } from '../services/api';
+import { api } from '../services/api';
 import WebSocketService from '../services/websocket';
 import NotificationPanel from './NotificationPanel';
 
@@ -91,13 +91,13 @@ const Dashboard = () => {
       setError(null);
 
       const [tasksData, humanRequestsData, roadmapData] = await Promise.all([
-        ApiService.getTasks(),
-        ApiService.getHumanRequests(),
-        ApiService.getRoadmap()
+        api.getTasks(),
+        api.getHumanRequests(),
+        api.getRoadmap()
       ]);
 
       setTasks(tasksData);
-      setHumanRequests(ApiService.parseHumanRequests(humanRequestsData));
+      setHumanRequests(api.parseHumanRequests(humanRequestsData));
       setRoadmap(roadmapData);
       setLastUpdate(new Date());
     } catch (err) {
@@ -164,7 +164,7 @@ const Dashboard = () => {
 
     // Listen for human requests updates
     WebSocketService.onHumanRequestsUpdate((updatedContent) => {
-      setHumanRequests(ApiService.parseHumanRequests(updatedContent));
+      setHumanRequests(api.parseHumanRequests(updatedContent));
       setLastUpdate(new Date());
       
       const settings = JSON.parse(localStorage.getItem('dashboard-settings') || '{}');
@@ -384,7 +384,7 @@ const Dashboard = () => {
         created_at: new Date().toISOString()
       };
       
-      await ApiService.createHumanRequest(requestData);
+      await api.createHumanRequest(requestData);
       setNewRequestData({ description: '', type: 'bug_report', priority: 'medium' });
       setShowNewRequestDialog(false);
       loadDashboardData(); // Refresh data
@@ -415,7 +415,7 @@ const Dashboard = () => {
     fetchInstances();
   };
 
-  const taskStats = ApiService.getTaskStats(tasks);
+  const taskStats = api.getTaskStats(tasks);
 
   if (loading) {
     return (
@@ -466,7 +466,9 @@ const Dashboard = () => {
             
             <Tooltip title="Track Running Instances">
               <IconButton onClick={handleTrackOrchestration} color="info">
-                <RobotIcon />
+                <Badge badgeContent={instances.filter(i => i.status === 'active').length} color="error">
+                  <RobotIcon />
+                </Badge>
               </IconButton>
             </Tooltip>
             
@@ -485,13 +487,7 @@ const Dashboard = () => {
             />
           </Box>
           
-          <Tooltip title="Notifications">
-            <IconButton onClick={() => setShowNotificationPanel(true)}>
-              <Badge badgeContent={notificationCount} color="error">
-                <NotificationsIcon />
-              </Badge>
-            </IconButton>
-          </Tooltip>
+
           
           <Tooltip title="Refresh Data">
             <IconButton onClick={loadDashboardData} disabled={loading}>

@@ -52,7 +52,7 @@ import {
   Pending as PendingIcon,
   Search as SearchIcon
 } from '@mui/icons-material';
-import { ApiService } from '../services/api';
+import { api } from '../services/api';
 import WebSocketService from '../services/websocket';
 
 const REQUEST_TYPES = {
@@ -140,9 +140,9 @@ const HumanRequests = () => {
     try {
       setLoading(true);
       setError(null);
-      const content = await ApiService.getHumanRequests();
+      const content = await api.getHumanRequests();
       setRawContent(content);
-      setHumanRequests(ApiService.parseHumanRequests(content));
+      setHumanRequests(api.parseHumanRequests(content));
     } catch (err) {
       setError(err.message);
       console.error('Failed to load human requests:', err);
@@ -154,7 +154,7 @@ const HumanRequests = () => {
   const setupWebSocket = () => {
     WebSocketService.onHumanRequestsUpdate((updatedContent) => {
       setRawContent(updatedContent);
-      setHumanRequests(ApiService.parseHumanRequests(updatedContent));
+      setHumanRequests(api.parseHumanRequests(updatedContent));
     });
   };
 
@@ -168,9 +168,9 @@ const HumanRequests = () => {
       // Add to pending section
       const updatedContent = addRequestToMarkdown(rawContent, newRequestMarkdown, 'pending');
       
-      await ApiService.updateHumanRequests(updatedContent);
+      await api.updateHumanRequests(updatedContent);
       setRawContent(updatedContent);
-      setHumanRequests(ApiService.parseHumanRequests(updatedContent));
+      setHumanRequests(api.parseHumanRequests(updatedContent));
       
       if (!editingRequest) {
         // Reset form and keep dialog open for new requests
@@ -188,9 +188,9 @@ const HumanRequests = () => {
       const updatedRequestMarkdown = generateRequestMarkdown(formData);
       const updatedContent = updateRequestInMarkdown(rawContent, editingRequest, updatedRequestMarkdown, formData.status);
       
-      await ApiService.updateHumanRequests(updatedContent);
+      await api.updateHumanRequests(updatedContent);
       setRawContent(updatedContent);
-      setHumanRequests(ApiService.parseHumanRequests(updatedContent));
+      setHumanRequests(api.parseHumanRequests(updatedContent));
       handleCloseDialog();
     } catch (err) {
       setError(`Failed to update request: ${err.message}`);

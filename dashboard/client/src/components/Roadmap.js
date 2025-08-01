@@ -32,7 +32,7 @@ import {
   Schedule as ScheduleIcon,
   ExpandMore as ExpandMoreIcon
 } from '@mui/icons-material';
-import { ApiService } from '../services/api';
+import { api } from '../services/api';
 import WebSocketService from '../services/websocket';
 
 const Roadmap = () => {
@@ -56,7 +56,7 @@ const Roadmap = () => {
     try {
       setLoading(true);
       setError(null);
-      const content = await ApiService.getRoadmap();
+      const content = await api.getRoadmap();
       setRoadmapContent(content);
       setParsedRoadmap(parseRoadmapContent(content));
     } catch (err) {

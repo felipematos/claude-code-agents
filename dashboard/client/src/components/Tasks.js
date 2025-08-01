@@ -49,7 +49,7 @@ import {
 } from '@mui/icons-material';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { useNavigate } from 'react-router-dom';
-import { ApiService } from '../services/api';
+import { api } from '../services/api';
 import WebSocketService from '../services/websocket';
 
 const TASK_STATUSES = ['pending', 'in_progress', 'done', 'blocked'];
@@ -149,7 +149,7 @@ const Tasks = () => {
     try {
       setLoading(true);
       setError(null);
-      const tasksData = await ApiService.getTasks();
+      const tasksData = await api.getTasks();
       // Ensure tasksData is an array
       if (Array.isArray(tasksData)) {
         setTasks(tasksData);
@@ -168,7 +168,7 @@ const Tasks = () => {
 
   const loadUserStories = async () => {
     try {
-      const userStoriesData = await ApiService.getUserStories();
+      const userStoriesData = await api.getUserStories();
       if (userStoriesData && Array.isArray(userStoriesData.stories)) {
         setUserStories(userStoriesData.stories);
         // Initialize selectedUserStories with all story IDs
@@ -242,7 +242,7 @@ const Tasks = () => {
     
     try {
       const updatedTask = { ...task, status: newStatus };
-      await ApiService.updateTask(task.id || task.task_id, updatedTask);
+      await api.updateTask(task.id || task.task_id, updatedTask);
       
       // Update local state
       setTasks(prevTasks => 
@@ -295,7 +295,7 @@ const Tasks = () => {
         }
       };
 
-      await ApiService.createTask(taskData);
+      await api.createTask(taskData);
       setTasks(prevTasks => [...prevTasks, taskData]);
       handleCloseDialog();
       
@@ -322,7 +322,7 @@ const Tasks = () => {
         }
       };
 
-      await ApiService.updateTask(editingTask.id, updatedTask);
+      await api.updateTask(editingTask.id, updatedTask);
       setTasks(prevTasks => 
         prevTasks.map(t => t.id === editingTask.id ? updatedTask : t)
       );

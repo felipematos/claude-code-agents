@@ -20,14 +20,47 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Determine if running in test mode (template repository)
-const IS_TEST_MODE = process.env.NODE_ENV === 'test' || !fs.existsSync(path.join(__dirname, '../../.plan'));
+/**
+ * Repository type detection (demo mode aware).
+ * Demo mode is TRUE when project-relative './.plan' does not exist.
+ * - If .plan exists and has tasks.json -> existing_project (NOT demo)
+ * - If .plan exists but no tasks.json -> new_project (NOT demo, but needs setup)
+ * - If .plan missing -> template (DEMO MODE)
+ */
+function detectRepositoryType() {
+  const repoRoot = path.join(__dirname, '../../');
+  const planDir = path.join(repoRoot, '.plan');
+  const planTasksFile = path.join(planDir, 'tasks.json');
+  const templatesPlanDir = path.join(repoRoot, '.templates/.plan');
 
-// Path to the .plan directory
-const PLAN_DIR = IS_TEST_MODE ? path.join(__dirname, '../../.templates/.plan') : path.join(__dirname, '../../.plan');
+  const hasPlanDir = fs.existsSync(planDir);
+  const hasPlanTasks = fs.existsSync(planTasksFile);
+  const hasTemplatesPlanDir = fs.existsSync(templatesPlanDir);
+
+  // DEMO MODE: No .plan folder at repo root
+  if (!hasPlanDir) {
+    return 'template';
+  }
+
+  // .plan exists without tasks.json -> treat as new project needing setup
+  if (hasPlanDir && !hasPlanTasks) {
+    return 'new_project';
+  }
+
+  // .plan exists with tasks.json -> existing project
+  return 'existing_project';
+}
+
+const REPO_TYPE = detectRepositoryType();
+// DEMO MODE: when no './.plan' at repo root (REPO_TYPE === 'template')
+const DEMO_MODE = REPO_TYPE === 'template';
+
+// Path to the .plan directory (use templates when DEMO_MODE)
+const PLAN_DIR = DEMO_MODE ? path.join(__dirname, '../../.templates/.plan') : path.join(__dirname, '../../.plan');
 const TEMPLATES_DIR = path.join(__dirname, '../../.templates/.plan');
 
-console.log(`🔧 Running in ${IS_TEST_MODE ? 'TEST' : 'PRODUCTION'} mode`);
+console.log(`🔧 Repository type: ${REPO_TYPE}`);
+console.log(`🧪 Demo mode: ${DEMO_MODE ? 'ON (using templates)' : 'OFF (using real .plan)'}`);
 console.log(`📁 Using directory: ${PLAN_DIR}`);
 
 // WebSocket server for real-time updates
@@ -61,8 +94,8 @@ class FileManager {
   }
 
   static async readJsonFile(filename) {
-    // In test mode, try to read template files with .template extension
-    const actualFilename = IS_TEST_MODE && !filename.endsWith('.template') ? `${filename}.template` : filename;
+    // In demo mode, read from templates with .template extension
+    const actualFilename = DEMO_MODE && !filename.endsWith('.template') ? `${filename}.template` : filename;
     const filePath = path.join(PLAN_DIR, actualFilename);
     
     try {
@@ -78,9 +111,9 @@ class FileManager {
   }
 
   static async writeJsonFile(filename, data) {
-    if (IS_TEST_MODE) {
-      console.log(`⚠️  Test mode: Write operation to ${filename} simulated (read-only)`);
-      return true; // Simulate successful write in test mode
+    if (DEMO_MODE) {
+      console.log(`⚠️  Demo mode: Write operation to ${filename} simulated (read-only)`);
+      return true; // Simulate successful write in demo mode
     }
     
     const filePath = path.join(PLAN_DIR, filename);
@@ -94,8 +127,8 @@ class FileManager {
   }
 
   static async readMarkdownFile(filename) {
-    // In test mode, try to read template files with .template extension
-    const actualFilename = IS_TEST_MODE && !filename.endsWith('.template') ? `${filename}.template` : filename;
+    // In demo mode, try to read template files with .template extension
+    const actualFilename = DEMO_MODE && !filename.endsWith('.template') ? `${filename}.template` : filename;
     const filePath = path.join(PLAN_DIR, actualFilename);
     
     try {
@@ -110,9 +143,9 @@ class FileManager {
   }
 
   static async writeMarkdownFile(filename, content) {
-    if (IS_TEST_MODE) {
-      console.log(`⚠️  Test mode: Write operation to ${filename} simulated (read-only)`);
-      return true; // Simulate successful write in test mode
+    if (DEMO_MODE) {
+      console.log(`⚠️  Demo mode: Write operation to ${filename} simulated (read-only)`);
+      return true; // Simulate successful write in demo mode
     }
     
     const filePath = path.join(PLAN_DIR, filename);
@@ -126,8 +159,8 @@ class FileManager {
   }
 
   static async initializeFromTemplates() {
-    if (IS_TEST_MODE) {
-      console.log('🧪 Test mode: Using template files directly, no initialization needed');
+    if (DEMO_MODE) {
+      console.log('🧪 Demo mode: Using template files directly, no initialization needed');
       return;
     }
     
@@ -340,6 +373,189 @@ const orchestrationManager = new OrchestrationManager();
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+/**
+ * Repository type and demo-mode status
+ */
+app.get('/api/repo-type', (req, res) => {
+  res.json({ 
+    type: REPO_TYPE,
+    demoMode: DEMO_MODE,
+    isTemplate: REPO_TYPE === 'template',
+    needsSetup: REPO_TYPE === 'new_project',
+    isReady: REPO_TYPE === 'existing_project'
+  });
+});
+
+// Setup simulation for template repos
+app.post('/api/setup/simulate', async (req, res) => {
+  if (REPO_TYPE !== 'template') {
+    return res.status(400).json({ error: 'Simulation only available in template repositories' });
+  }
+  
+  const { projectDescription, techStack, productVision } = req.body;
+  
+  // Simulate setup steps and generate report
+  const simulationReport = {
+    timestamp: new Date().toISOString(),
+    projectDescription,
+    techStack,
+    productVision,
+    steps: [
+      {
+        step: 1,
+        action: 'Initialize Claude Code',
+        command: `claude init --description "${projectDescription}"`,
+        description: 'Would initialize Claude Code with project description'
+      },
+      {
+        step: 2,
+        action: 'Download Agent Files',
+        command: 'git clone --depth 1 https://github.com/felipematos/claude-code-agents.git temp && mkdir -p .claude/agents && cp -r temp/agents/* .claude/agents/ && rm -rf temp',
+        description: 'Would clone felipematos/claude-code-agents and copy only the agents folder contents to ./.claude/agents at the repository root'
+      },
+      {
+        step: 3,
+        action: 'Download Dashboard System',
+        command: 'cp -r temp/dashboard ./dashboard/',
+        description: 'Would download complete dashboard system to ./dashboard/'
+      },
+      {
+        step: 4,
+        action: 'Copy Starter Script',
+        command: 'cp temp/dashboard/start-dashboard.sh ./start-dashboard.sh && chmod +x ./start-dashboard.sh',
+        description: 'Would copy and make executable the dashboard starter script'
+      },
+      {
+        step: 5,
+        action: 'Initialize Project Structure',
+        command: 'mkdir -p .plan && cp -r temp/.templates/.plan/* .plan/ && find .plan -name "*.template" -exec bash -c '\''for f; do mv "$f" "${f%.template}"; done'\'' _ {} +',
+        description: 'Would create .plan directory, copy template files, and rename all "*.template" files to remove the .template extension (e.g., plan.md.template -> plan.md)'
+      },
+      {
+        step: 6,
+        action: 'Update CLAUDE.md',
+        command: 'sh -c \'TMPFILE=$(mktemp) && cat temp/.templates/CLAUDE.md.template CLAUDE.md > "$TMPFILE" && mv "$TMPFILE" CLAUDE.md\'',
+        description: 'Would prepend orchestration instructions from template into CLAUDE.md in a cross-platform safe way'
+      },
+      {
+        step: 7,
+        action: 'Launch Strategist',
+        command: 'claude --agent Strategist "Create product vision and orchestration tasks, based on this vision: ' + String(productVision || '').replace(/["$`\\]/g, '\\$&') + '"',
+        description: 'Would launch Claude Code with Strategist using the provided Product Vision to create the initial roadmap and orchestration tasks'
+      }
+    ],
+    summary: `Setup simulation completed for project: "${projectDescription}". In a real repository, this would fully configure the Claude Code Agents system with ${techStack} technology stack and initialize the orchestration workflow.`
+  };
+  
+  res.json(simulationReport);
+});
+
+// Execute real setup for new project repos
+app.post('/api/setup/execute', async (req, res) => {
+  if (REPO_TYPE !== 'new_project') {
+    return res.status(400).json({ error: 'Real setup only available in new project repositories' });
+  }
+  
+  const { projectDescription, techStack, productVision } = req.body;
+
+  // Helper to run shell commands and capture output
+  const run = (cmd, opts = {}) => new Promise((resolve) => {
+    const child = require('child_process').spawn(cmd, { shell: true, stdio: ['ignore', 'pipe', 'pipe'], ...opts });
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', d => { stdout += d.toString(); });
+    child.stderr.on('data', d => { stderr += d.toString(); });
+    child.on('close', code => resolve({ code, stdout, stderr }));
+  });
+
+  // Steps to execute in real environment mirroring simulation steps
+  const steps = [
+    {
+      step: 1,
+      action: 'Initialize Claude Code',
+      command: `claude init --description "${String(projectDescription || '').replace(/["$`\\]/g, '\\$&')}"`,
+      exec: async () => await run(`claude init --description "${String(projectDescription || '').replace(/["$`\\]/g, '\\$&')}"`)
+    },
+    {
+      step: 2,
+      action: 'Download Agent Files',
+      command: 'git clone --depth 1 https://github.com/felipematos/claude-code-agents.git temp && mkdir -p .claude/agents && cp -r temp/agents/* .claude/agents/ && rm -rf temp',
+      exec: async () => await run('git clone --depth 1 https://github.com/felipematos/claude-code-agents.git temp && mkdir -p .claude/agents && cp -r temp/agents/* .claude/agents/ && rm -rf temp')
+    },
+    {
+      step: 3,
+      action: 'Download Dashboard System',
+      command: 'cp -r temp/dashboard ./dashboard/',
+      exec: async () => {
+        // Only copy if temp exists with dashboard (in case step 2 created temp)
+        return await run('if [ -d temp/dashboard ]; then cp -r temp/dashboard ./dashboard/; fi');
+      }
+    },
+    {
+      step: 4,
+      action: 'Copy Starter Script',
+      command: 'cp temp/dashboard/start-dashboard.sh ./start-dashboard.sh && chmod +x ./start-dashboard.sh',
+      exec: async () => await run('if [ -f temp/dashboard/start-dashboard.sh ]; then cp temp/dashboard/start-dashboard.sh ./start-dashboard.sh && chmod +x ./start-dashboard.sh; fi')
+    },
+    {
+      step: 5,
+      action: 'Initialize Project Structure',
+      command: 'mkdir -p .plan && cp -r temp/.templates/.plan/* .plan/ && find .plan -name "*.template" -exec bash -c \'for f; do mv "$f" "${f%.template}"; done\' _ {} +',
+      exec: async () => await run('mkdir -p .plan && if [ -d temp/.templates/.plan ]; then cp -r temp/.templates/.plan/* .plan/; fi && find .plan -name "*.template" -exec bash -c \'for f; do mv "$f" "${f%.template}"; done\' _ {} +')
+    },
+    {
+      step: 6,
+      action: 'Update CLAUDE.md',
+      command: 'sh -c \'TMPFILE=$(mktemp) && cat temp/.templates/CLAUDE.md.template CLAUDE.md > "$TMPFILE" && mv "$TMPFILE" CLAUDE.md\'',
+      exec: async () => await run('sh -c \'TMPFILE=$(mktemp) && if [ -f temp/.templates/CLAUDE.md.template ]; then cat temp/.templates/CLAUDE.md.template; fi; if [ -f CLAUDE.md ]; then cat CLAUDE.md; fi > "$TMPFILE" && mv "$TMPFILE" CLAUDE.md\'')
+    },
+    {
+      step: 7,
+      action: 'Launch Strategist',
+      command: 'claude --agent Strategist "Create product vision and orchestration tasks, based on this vision: ' + String(productVision || '').replace(/["$`\\]/g, '\\$&') + '"',
+      exec: async () => await run('claude --agent Strategist "Create product vision and orchestration tasks, based on this vision: ' + String(productVision || '').replace(/["$`\\]/g, '\\$&') + '"')
+    }
+  ];
+
+  const results = [];
+  try {
+    for (const s of steps) {
+      const r = await s.exec();
+      results.push({
+        step: s.step,
+        action: s.action,
+        command: s.command,
+        exitCode: r.code,
+        stdout: r.stdout?.slice(0, 4000), // avoid huge payloads
+        stderr: r.stderr?.slice(0, 4000)
+      });
+      // Do not stop on non-zero exits; return a full report of successes/failures
+    }
+
+    res.json({
+      status: 'completed',
+      summary: 'Setup execution finished. See per-step results for details.',
+      steps: results,
+      projectDescription,
+      techStack,
+      productVision
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Setup execution failed', details: error.message, steps: results });
+  }
+});
+
+// Get setup status (augmented with demoMode)
+app.get('/api/setup/status', (req, res) => {
+  res.json({
+    repoType: REPO_TYPE,
+    demoMode: DEMO_MODE,
+    canSimulate: REPO_TYPE === 'template',
+    canExecute: REPO_TYPE === 'new_project',
+    isReady: REPO_TYPE === 'existing_project'
+  });
 });
 
 // Get all tasks
@@ -581,8 +797,8 @@ app.post('/api/orchestration/start', (req, res) => {
 
 // File watcher for real-time updates
 function setupFileWatcher() {
-  if (IS_TEST_MODE) {
-    console.log('🧪 Test mode: File watching disabled (read-only template files)');
+  if (DEMO_MODE) {
+    console.log('🧪 Demo mode: File watching disabled (read-only template files)');
     return;
   }
   
