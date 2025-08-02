@@ -127,6 +127,11 @@ The dashboard will be available at:
 - **Client**: http://localhost:3001
 - **Server API**: http://localhost:3002
 
+### Demo Mode vs Real Mode
+The dashboard determines its mode dynamically:
+- Demo Mode: Active when there is no .plan directory at the repository root. Data is read/written under .demo and test artifacts under .demo/tests. This mode is writable and file watching is enabled.
+- Real Mode: Active when .plan exists. Data is read/written under .plan and tests under .plan/tests. On first run, any missing files are initialized from .templates/.plan and .templates/tests (templates copied as-is; .template suffix removed for .plan files).
+
 ### Dashboard Features
 
 - **Real-time Task Monitoring**: View and manage tasks with drag-and-drop functionality
@@ -162,6 +167,7 @@ See `agents/Dashboard-Manager.md` for complete agent documentation.
 - **Do NOT** request features or report bugs directly to Claude Code.
 - Instead, add them to `.plan/human-requests.md` in your project.
 - The Human-Concierge agent will process all new requests and coordinate with the Product-Manager for roadmap integration.
+- Deduplication: Before adding a new item, scan existing entries in `.plan/human-requests.md` and open items in `tasks.json`. If a pending item already addresses the same area or intent, update that existing entry with additional details instead of creating a new one. The Human-Concierge will consolidate duplicates and maintain a single canonical record.
 
 ### Handling Agent Questions
 - Regularly check `.plan/human-requests.md` for pending requests requiring your attention.

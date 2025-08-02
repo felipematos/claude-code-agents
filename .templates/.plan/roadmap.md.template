@@ -1,186 +1,35 @@
-# PRODUCT ROADMAP
+# Roadmap
 
-## OVERVIEW
-**Project**: [Project Name]
-**Last Updated**: [YYYY-MM-DD]
-**Planning Horizon**: 4 Stages Ahead
-**Current Stage**: [Stage Name]
+## Stage 1 – [Stage Name]
+Milestones:
+- [M1.1] [Milestone]
+- [M1.2] [Milestone]
 
----
+Epics:
+- [E-001] [Epic Title]
+- [E-002] [Epic Title]
 
-## STAGE DEFINITIONS
+#### Sprints
+- Sprint 1.1 (2 weeks)
+  - [Goal 1]
+  - [Goal 2]
+- Sprint 1.2 (2 weeks)
+  - [Goal 1]
+  - [Goal 2]
 
-### PAST STAGES (DONE)
+## Stage 2 – [Stage Name]
+Milestones:
+- [M2.1] [Milestone]
+- [M2.2] [Milestone]
 
-#### STAGE-I: [Stage Name] ✅
-**Status**: Done
-**Completion Date**: [YYYY-MM-DD]
-**Key Achievements**:
-- [Achievement 1]
-- [Achievement 2]
-- [Achievement 3]
+Epics:
+- [E-003] [Epic Title]
+- [E-004] [Epic Title]
 
-**Milestones Completed**:
-- ✅ [Milestone 1]
-- ✅ [Milestone 2]
-- ✅ [Milestone 3]
-
----
-
-### CURRENT STAGE (PRESENT)
-
-#### STAGE-II: [Stage Name] 🚀
-**Status**: Current
-**Start Date**: [YYYY-MM-DD]
-**Target Completion**: [YYYY-MM-DD]
-**Progress**: [X]% Complete
-
-**Milestones**:
-- 🟢 [Completed Milestone]
-- 🟡 [In Progress Milestone]
-- ⚪ [Pending Milestone]
-
-**Current Epics**:
-- **Epic 1**: [Epic Name] - [Status]
-  - Sprint 1: [Sprint Description] - [Status]
-  - Sprint 2: [Sprint Description] - [Status]
-- **Epic 2**: [Epic Name] - [Status]
-  - Sprint 1: [Sprint Description] - [Status]
-  - Sprint 2: [Sprint Description] - [Status]
-
-**Active Sprint**: Sprint [X] - [Sprint Name]
-**Sprint Progress**: [X]/[Y] Tasks Complete
-**Current Tasks**:
-- [ ] Task 1 - [Assigned Agent]
-- [ ] Task 2 - [Assigned Agent]
-- [x] Task 3 - [Assigned Agent]
-
----
-
-### NEXT STAGE
-
-#### STAGE-III: [Stage Name] 📋
-**Status**: Next
-**Planned Start**: [YYYY-MM-DD]
-**Estimated Duration**: [X weeks]
-
-**Enhanced Milestones**:
-- **Milestone 1**: [Detailed Description]
-  - Key Features: [Feature 1, Feature 2, Feature 3]
-  - Technical Considerations: [Tech notes]
-  - Dependencies: [Dependency list]
-  - Estimated Effort: [X hours]
-
-- **Milestone 2**: [Detailed Description]
-  - Key Features: [Feature 1, Feature 2, Feature 3]
-  - Technical Considerations: [Tech notes]
-  - Dependencies: [Dependency list]
-  - Estimated Effort: [X hours]
-
-**Initial Epic Planning**:
-- Potential Epic 1: [Epic concept]
-- Potential Epic 2: [Epic concept]
-
----
-
-### FUTURE STAGES
-
-#### STAGE-IV: [Stage Name] 🔮
-**Status**: Future
-**Rough Timeline**: [Quarter/Month]
-
-**High-Level Milestones**:
-- [Milestone Theme 1]
-- [Milestone Theme 2]
-- [Milestone Theme 3]
-
-#### STAGE-V: [Stage Name] 🔮
-**Status**: Future
-**Rough Timeline**: [Quarter/Month]
-
-**High-Level Milestones**:
-- [Milestone Theme 1]
-- [Milestone Theme 2]
-- [Milestone Theme 3]
-
----
-
-## SPRINT PLANNING (CURRENT STAGE ONLY)
-
-### Sprint Definitions
-- **Duration**: 5 hours of AI agent work
-- **Capacity**: ~900 messages or 200-800 code prompts
-- **Scope**: Current epic only
-
-### Sprint Schedule
-| Sprint | Epic | Start Date | Status | Tasks | Progress |
-|--------|------|------------|--------|-------|----------|
-| Sprint 1 | Epic A | [Date] | ✅ Done | 8/8 | 100% |
-| Sprint 2 | Epic A | [Date] | 🟡 Active | 3/6 | 50% |
-| Sprint 3 | Epic B | [Date] | ⚪ Planned | 0/5 | 0% |
-
----
-
-## DEPENDENCIES & RISKS
-
-### Cross-Stage Dependencies
-- **Stage III depends on**: [Stage II Milestone X]
-- **Stage IV depends on**: [Stage III Milestone Y]
-
-### Technical Dependencies
-- [Dependency 1]: [Description and impact]
-- [Dependency 2]: [Description and impact]
-
-### Risk Assessment
-| Risk | Impact | Probability | Mitigation |
-|------|--------|-------------|------------|
-| [Risk 1] | High | Medium | [Mitigation strategy] |
-| [Risk 2] | Medium | Low | [Mitigation strategy] |
-
----
-
-## METRICS & KPIs
-
-### Stage Completion Metrics
-- **Average Stage Duration**: [X weeks]
-- **Milestone Success Rate**: [X]%
-- **Sprint Velocity**: [X tasks/sprint]
-
-### Quality Metrics
-- **Bug Rate**: [X bugs/milestone]
-- **Test Coverage**: [X]%
-- **UI Test Pass Rate**: [X]%
-
----
-
-## CHANGE LOG
-
-### [YYYY-MM-DD]
-- **Change**: [Description]
-- **Reason**: [Justification]
-- **Impact**: [Affected stages/milestones]
-- **Updated By**: [Agent/User]
-
-### [YYYY-MM-DD]
-- **Change**: [Description]
-- **Reason**: [Justification]
-- **Impact**: [Affected stages/milestones]
-- **Updated By**: [Agent/User]
-
----
-
-## NOTES
-
-### Planning Principles
-- Stages represent major product phases
-- Milestones are feature-based, not time-based
-- Detail increases as stages approach Current
-- Only Current stage has epics and sprints
-- Only Current sprint has detailed tasks
-
-### Update Triggers
-- Stage transition (automatic milestone enhancement)
-- Epic completion (sprint planning update)
-- Sprint completion (task breakdown update)
-- Vision changes (stage/milestone reorganization)
-- Stakeholder feedback (priority adjustments)
+#### Sprints
+- Sprint 2.1 (2 weeks)
+  - [Goal 1]
+  - [Goal 2]
+- Sprint 2.2 (2 weeks)
+  - [Goal 1]
+  - [Goal 2]

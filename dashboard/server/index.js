@@ -31,11 +31,9 @@ function detectRepositoryType() {
   const repoRoot = path.join(__dirname, '../../');
   const planDir = path.join(repoRoot, '.plan');
   const planTasksFile = path.join(planDir, 'tasks.json');
-  const templatesPlanDir = path.join(repoRoot, '.templates/.plan');
 
   const hasPlanDir = fs.existsSync(planDir);
   const hasPlanTasks = fs.existsSync(planTasksFile);
-  const hasTemplatesPlanDir = fs.existsSync(templatesPlanDir);
 
   // DEMO MODE: No .plan folder at repo root
   if (!hasPlanDir) {
@@ -55,12 +53,26 @@ const REPO_TYPE = detectRepositoryType();
 // DEMO MODE: when no './.plan' at repo root (REPO_TYPE === 'template')
 const DEMO_MODE = REPO_TYPE === 'template';
 
-// Path to the .plan directory (use templates when DEMO_MODE)
-const PLAN_DIR = DEMO_MODE ? path.join(__dirname, '../../.templates/.plan') : path.join(__dirname, '../../.plan');
-const TEMPLATES_DIR = path.join(__dirname, '../../.templates/.plan');
+// Base directories
+const REPO_ROOT = path.join(__dirname, '../../');
+const PLAN_DIR_REAL = path.join(REPO_ROOT, '.plan');
+const DEMO_DIR = path.join(REPO_ROOT, '.demo');
+const TEMPLATES_DIR = path.join(REPO_ROOT, '.templates/.plan');
+const TEST_TEMPLATES_DIR = path.join(REPO_ROOT, '.templates/tests');
+const TESTS_DIR_REAL = path.join(REPO_ROOT, '.plan/tests');
+const TESTS_DIR_DEMO = path.join(REPO_ROOT, '.demo/tests');
+
+/**
+ * Active data directory based on mode:
+ * - Demo mode: use .demo (read/write)
+ * - Real mode: use .plan (read/write)
+ * No automatic copying/renaming at runtime.
+ */
+const PLAN_DIR = DEMO_MODE ? DEMO_DIR : PLAN_DIR_REAL;
+const TESTS_DIR = DEMO_MODE ? TESTS_DIR_DEMO : TESTS_DIR_REAL;
 
 console.log(`🔧 Repository type: ${REPO_TYPE}`);
-console.log(`🧪 Demo mode: ${DEMO_MODE ? 'ON (using templates)' : 'OFF (using real .plan)'}`);
+console.log(`🧪 Demo mode: ${DEMO_MODE ? 'ON (using .demo)' : 'OFF (using .plan)'}`);
 console.log(`📁 Using directory: ${PLAN_DIR}`);
 
 // WebSocket server for real-time updates
@@ -94,10 +106,7 @@ class FileManager {
   }
 
   static async readJsonFile(filename) {
-    // In demo mode, read from templates with .template extension
-    const actualFilename = DEMO_MODE && !filename.endsWith('.template') ? `${filename}.template` : filename;
-    const filePath = path.join(PLAN_DIR, actualFilename);
-    
+    const filePath = path.join(PLAN_DIR, filename);
     try {
       if (await fs.pathExists(filePath)) {
         const content = await fs.readFile(filePath, 'utf8');
@@ -105,19 +114,16 @@ class FileManager {
       }
       return null;
     } catch (error) {
-      console.error(`Error reading ${actualFilename}:`, error);
+      console.error(`Error reading ${filename}:`, error);
       return null;
     }
   }
 
   static async writeJsonFile(filename, data) {
-    if (DEMO_MODE) {
-      console.log(`⚠️  Demo mode: Write operation to ${filename} simulated (read-only)`);
-      return true; // Simulate successful write in demo mode
-    }
-    
+    // Both modes write to their active directory
     const filePath = path.join(PLAN_DIR, filename);
     try {
+      await fs.ensureDir(path.dirname(filePath));
       await fs.writeFile(filePath, JSON.stringify(data, null, 2));
       return true;
     } catch (error) {
@@ -127,29 +133,23 @@ class FileManager {
   }
 
   static async readMarkdownFile(filename) {
-    // In demo mode, try to read template files with .template extension
-    const actualFilename = DEMO_MODE && !filename.endsWith('.template') ? `${filename}.template` : filename;
-    const filePath = path.join(PLAN_DIR, actualFilename);
-    
+    const filePath = path.join(PLAN_DIR, filename);
     try {
       if (await fs.pathExists(filePath)) {
         return await fs.readFile(filePath, 'utf8');
       }
       return null;
     } catch (error) {
-      console.error(`Error reading ${actualFilename}:`, error);
+      console.error(`Error reading ${filename}:`, error);
       return null;
     }
   }
 
   static async writeMarkdownFile(filename, content) {
-    if (DEMO_MODE) {
-      console.log(`⚠️  Demo mode: Write operation to ${filename} simulated (read-only)`);
-      return true; // Simulate successful write in demo mode
-    }
-    
+    // Both modes write to their active directory
     const filePath = path.join(PLAN_DIR, filename);
     try {
+      await fs.ensureDir(path.dirname(filePath));
       await fs.writeFile(filePath, content);
       return true;
     } catch (error) {
@@ -159,28 +159,46 @@ class FileManager {
   }
 
   static async initializeFromTemplates() {
+    // No automatic seeding/copying behavior for demo mode at runtime.
+    // Demo mode: ensure .demo directory exists; content is managed manually or by one-time setup scripts.
     if (DEMO_MODE) {
-      console.log('🧪 Demo mode: Using template files directly, no initialization needed');
+      await fs.ensureDir(DEMO_DIR);
+      await fs.ensureDir(TESTS_DIR);
       return;
     }
-    
+
+    // Real mode: ensure .plan exists; optionally initialize from templates if missing files
     await this.ensurePlanDir();
-    
+    await fs.ensureDir(TESTS_DIR);
+
     const templateFiles = [
       'tasks.json.template',
       'human-requests.md.template',
-      'roadmap.md.template'
+      'roadmap.md.template',
+      'user_stories.md.template',
+      'product_vision.md.template'
     ];
 
     for (const templateFile of templateFiles) {
       const targetFile = templateFile.replace('.template', '');
       const targetPath = path.join(PLAN_DIR, targetFile);
-      
-      if (!(await fs.pathExists(targetPath))) {
-        const templatePath = path.join(TEMPLATES_DIR, templateFile);
-        if (await fs.pathExists(templatePath)) {
-          await fs.copy(templatePath, targetPath);
-          console.log(`Initialized ${targetFile} from template`);
+      const templatePath = path.join(TEMPLATES_DIR, templateFile);
+
+      if (!(await fs.pathExists(targetPath)) && (await fs.pathExists(templatePath))) {
+        await fs.copy(templatePath, targetPath);
+        console.log(`Initialized ${targetFile} from template`);
+      }
+    }
+
+    // Initialize tests folder from .templates/tests (files copied as-is)
+    if (await fs.pathExists(TEST_TEMPLATES_DIR)) {
+      const testEntries = await fs.readdir(TEST_TEMPLATES_DIR);
+      for (const entry of testEntries) {
+        const src = path.join(TEST_TEMPLATES_DIR, entry);
+        const dest = path.join(TESTS_DIR, entry);
+        if (!(await fs.pathExists(dest))) {
+          await fs.copy(src, dest);
+          console.log(`Initialized tests/${entry} from templates`);
         }
       }
     }
@@ -430,13 +448,13 @@ app.post('/api/setup/simulate', async (req, res) => {
       {
         step: 5,
         action: 'Initialize Project Structure',
-        command: 'mkdir -p .plan && cp -r temp/.templates/.plan/* .plan/ && find .plan -name "*.template" -exec bash -c '\''for f; do mv "$f" "${f%.template}"; done'\'' _ {} +',
+        command: "mkdir -p .plan && cp -r temp/.templates/.plan/* .plan/ && find .plan -name \"*.template\" -exec bash -c 'for f; do mv \"$f\" \"${f%.template}\"; done' _ {} +",
         description: 'Would create .plan directory, copy template files, and rename all "*.template" files to remove the .template extension (e.g., plan.md.template -> plan.md)'
       },
       {
         step: 6,
         action: 'Update CLAUDE.md',
-        command: 'sh -c \'TMPFILE=$(mktemp) && cat temp/.templates/CLAUDE.md.template CLAUDE.md > "$TMPFILE" && mv "$TMPFILE" CLAUDE.md\'',
+        command: "sh -c 'TMPFILE=$(mktemp) && if [ -f temp/.templates/CLAUDE.md.template ]; then cat temp/.templates/CLAUDE.md.template; fi; if [ -f CLAUDE.md ]; then cat CLAUDE.md; fi > \"$TMPFILE\" && mv \"$TMPFILE\" CLAUDE.md'",
         description: 'Would prepend orchestration instructions from template into CLAUDE.md in a cross-platform safe way'
       },
       {
@@ -499,18 +517,18 @@ app.post('/api/setup/execute', async (req, res) => {
       command: 'cp temp/dashboard/start-dashboard.sh ./start-dashboard.sh && chmod +x ./start-dashboard.sh',
       exec: async () => await run('if [ -f temp/dashboard/start-dashboard.sh ]; then cp temp/dashboard/start-dashboard.sh ./start-dashboard.sh && chmod +x ./start-dashboard.sh; fi')
     },
-    {
-      step: 5,
-      action: 'Initialize Project Structure',
-      command: 'mkdir -p .plan && cp -r temp/.templates/.plan/* .plan/ && find .plan -name "*.template" -exec bash -c \'for f; do mv "$f" "${f%.template}"; done\' _ {} +',
-      exec: async () => await run('mkdir -p .plan && if [ -d temp/.templates/.plan ]; then cp -r temp/.templates/.plan/* .plan/; fi && find .plan -name "*.template" -exec bash -c \'for f; do mv "$f" "${f%.template}"; done\' _ {} +')
-    },
-    {
-      step: 6,
-      action: 'Update CLAUDE.md',
-      command: 'sh -c \'TMPFILE=$(mktemp) && cat temp/.templates/CLAUDE.md.template CLAUDE.md > "$TMPFILE" && mv "$TMPFILE" CLAUDE.md\'',
-      exec: async () => await run('sh -c \'TMPFILE=$(mktemp) && if [ -f temp/.templates/CLAUDE.md.template ]; then cat temp/.templates/CLAUDE.md.template; fi; if [ -f CLAUDE.md ]; then cat CLAUDE.md; fi > "$TMPFILE" && mv "$TMPFILE" CLAUDE.md\'')
-    },
+      {
+        step: 5,
+        action: 'Initialize Project Structure',
+        command: "mkdir -p .plan && cp -r temp/.templates/.plan/* .plan/ && find .plan -name \"*.template\" -exec bash -c 'for f; do mv \"$f\" \"${f%.template}\"; done' _ {} +",
+        exec: async () => await run("mkdir -p .plan && if [ -d temp/.templates/.plan ]; then cp -r temp/.templates/.plan/* .plan/; fi && find .plan -name \"*.template\" -exec bash -c 'for f; do mv \"$f\" \"${f%.template}\"; done' _ {} +")
+      },
+      {
+        step: 6,
+        action: 'Update CLAUDE.md',
+        command: "sh -c 'TMPFILE=$(mktemp) && if [ -f temp/.templates/CLAUDE.md.template ]; then cat temp/.templates/CLAUDE.md.template; fi; if [ -f CLAUDE.md ]; then cat CLAUDE.md; fi > \"$TMPFILE\" && mv \"$TMPFILE\" CLAUDE.md'",
+        exec: async () => await run("sh -c 'TMPFILE=$(mktemp) && if [ -f temp/.templates/CLAUDE.md.template ]; then cat temp/.templates/CLAUDE.md.template; fi; if [ -f CLAUDE.md ]; then cat CLAUDE.md; fi > \"$TMPFILE\" && mv \"$TMPFILE\" CLAUDE.md'")
+      },
     {
       step: 7,
       action: 'Launch Strategist',
@@ -797,12 +815,8 @@ app.post('/api/orchestration/start', (req, res) => {
 
 // File watcher for real-time updates
 function setupFileWatcher() {
-  if (DEMO_MODE) {
-    console.log('🧪 Demo mode: File watching disabled (read-only template files)');
-    return;
-  }
-  
-  const watcher = chokidar.watch(PLAN_DIR, {
+  // Watch the active directory in both modes (.demo or .plan)
+  const watcher = chokidar.watch([PLAN_DIR, TESTS_DIR], {
     ignored: /(^|[\/\\])\../, // ignore dotfiles
     persistent: true
   });
@@ -821,6 +835,9 @@ function setupFileWatcher() {
       } else if (filename === 'roadmap.md') {
         const content = await FileManager.readMarkdownFile('roadmap.md');
         broadcast({ type: 'roadmap_updated', data: { content } });
+      } else if (filePath.startsWith(TESTS_DIR)) {
+        // Basic broadcast for test file changes so client can react if needed
+        broadcast({ type: 'tests_updated', data: { filename, path: filePath.replace(REPO_ROOT + path.sep, '') } });
       }
     } catch (error) {
       console.error('Error processing file change:', error);

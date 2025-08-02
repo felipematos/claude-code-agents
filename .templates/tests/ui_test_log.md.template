@@ -1,86 +1,15 @@
-# UI Test Execution Log
-_Generated: YYYY-MM-DD HH:MM:SS · Agent: UI-Tester_
+# UI Test Log
 
-## Test Summary
-- **Test Execution ID**: TE-YYYYMMDD-HHMMSS-XXX
-- **User Story ID**: US-XXX
-- **Test Name**: Test name from workflow
-- **Criticality**: Critical/High/Medium/Low
-- **Execution Mode**: Quick/Standard/Full/Single
-- **Environment**: staging
-- **Browser**: Chrome 120.0.0
-- **Status**: PASSED/FAILED/ERROR
-- **Duration**: XXX ms
-- **Start Time**: YYYY-MM-DD HH:MM:SS
-- **End Time**: YYYY-MM-DD HH:MM:SS
+## Summary
+- Date: [YYYY-MM-DD]
+- Scenario: [Scenario Name]
+- Browser: [Chrome|Firefox|Safari]
+- Result: [PASSED|FAILED]
 
----
+## Steps
+1. [Step description]
+2. [Step description]
+3. [Step description]
 
-## Test Steps Executed
-
-### Step 1: Navigate to login page
-- **Action**: navigate
-- **Target**: https://staging.yourapp.com/login
-- **Status**: PASSED
-- **Duration**: 2500ms
-- **Screenshot**: screenshots/TE-XXX-step-1.png
-- **Expected Result**: Login form is displayed
-- **Actual Result**: Login form loaded successfully
-
-### Step 2: Enter valid email
-- **Action**: fill
-- **Target**: #email
-- **Value**: test@example.com
-- **Status**: PASSED
-- **Duration**: 150ms
-- **Screenshot**: screenshots/TE-XXX-step-2.png
-- **Expected Result**: Email field accepts input
-- **Actual Result**: Email entered successfully
-
-<!-- Add more steps as needed -->
-
----
-
-## Performance Metrics
-- **Page Load Time**: 1200ms
-- **Total Interactions**: 5
-- **Average Response Time**: 800ms
-- **Memory Usage**: 45MB
-- **Network Requests**: 12
-
----
-
-## Failure Details (if applicable)
-- **Failed Step**: 3
-- **Error Message**: Element not found: #asset-name
-- **Screenshot**: screenshots/TE-XXX-failure.png
-- **Stack Trace**:
-```
-Error: Element not found: #asset-name
-    at Page.waitForSelector (/path/to/test.js:45:12)
-    at async executeStep (/path/to/test.js:23:5)
-```
-
----
-
-## Test Data Used
-- **Test User**: test@example.com
-- **Test Environment**: staging.yourapp.com
-- **Test Data Set**: staging_dataset_v1.2
-
----
-
-## Cleanup Actions
-- Logged out test user
-- Cleared browser cache
-- Reset test data state
-
----
-
-## Next Actions
-- [ ] Review test results
-- [ ] Update user story status
-- [ ] Create fix task if failed
-- [ ] Archive test artifacts
-
-<!-- changelog: YYYY-MM-DD HH:MM:SS -03:00 Test execution completed. -->
+## Observations
+- [Notes, screenshots, errors]

@@ -256,9 +256,9 @@ const Tasks = () => {
         if (newStatus === 'done') {
           toast.success('Task completed!');
         } else if (newStatus === 'blocked') {
-          toast.warning('Task marked as blocked');
+          toast.error('Task marked as blocked');
         } else {
-          toast.info(`Task moved to ${newStatus.replace('_', ' ')}`);
+          toast(`Task moved to ${newStatus.replace('_', ' ')}`);
         }
       }
     } catch (err) {
@@ -335,9 +335,9 @@ const Tasks = () => {
         if (formData.status === 'done') {
           toast.success('Task completed!');
         } else if (formData.status === 'blocked') {
-          toast.warning('Task marked as blocked');
+          toast.error('Task marked as blocked');
         } else {
-          toast.info('Task updated');
+          toast('Task updated');
         }
       }
     } catch (err) {

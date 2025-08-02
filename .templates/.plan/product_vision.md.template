@@ -1,25 +1,18 @@
 # Product Vision
-_Last updated: YYYY-MM-DD · Owner: Strategist_
 
-## 1. Problem / Opportunity
-- Developers spend too much time on boilerplate code and repetitive tasks.
+## Vision
+[Describe the overarching product vision and purpose.]
 
-## 2. Target Users / Personas
-- **Software Engineer**: Wants to build features faster and focus on complex problems.
+## Goals
+- [Goal 1]
+- [Goal 2]
+- [Goal 3]
 
-## 3. Value Proposition
-- An AI-powered agent system that automates the entire development lifecycle, from planning to deployment.
+## Non-Goals
+- [Non-goal 1]
+- [Non-goal 2]
 
-## 4. Key Product Goals & KPIs
-- **Goal-01** | Reduce time-to-market for new features | 5 days | 2 days | STAGE I
-
-## 5. High-level Features (Epics)
-- **EPIC-001**: Core Agent System — The basic infrastructure for agents to operate.
-
-## 6. Constraints & Assumptions
-- The system will be built on top of the Claude API.
-
-## 7. Differentiators
-- A fully autonomous, test-driven development process.
-
-<!-- changelog: YYYY-MM-DD HH:MM:SS -03:00 Initial vision created. -->
+## KPIs
+- [KPI 1]
+- [KPI 2]
+- [KPI 3]

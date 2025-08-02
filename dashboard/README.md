@@ -18,6 +18,8 @@ cd dashboard
 ./start-dashboard.sh
 ```
 
+Deduplication note: When using the dashboard to file new feature/bug requests, scan existing items in `.plan/human-requests.md` and open entries in `tasks.json`. If there’s an existing pending item addressing the same area/intent, update that item instead of creating a new one. The Human-Concierge agent will consolidate duplicates to maintain a single canonical record.
+
 **Note**: The script automatically detects if you're running in a template repository and switches to test mode, using the template files directly from `.templates/.plan/` instead of the real `.plan/` directory.
 
 ### Option 2: Manual Start
@@ -41,17 +43,17 @@ Use the Dashboard-Manager agent to automatically start the service:
 
 ## Operating Modes
 
-### Production Mode
-- Uses files from `.plan/` directory
+### Real Mode
+- Uses files from `.plan/` directory (read/write)
 - Supports file watching and real-time updates
-- Allows editing and saving changes
-- Used when working with actual project data
+- Initializes missing files on first run from `.templates/.plan` (removing `.template` suffix) and `.templates/tests` (copied as-is)
+- Recommended when working with actual project data
 
-### Test Mode
-- Uses template files from `.templates/.plan/` directory
-- Read-only mode (writes are simulated)
-- No file watching (template files are static)
-- Perfect for demonstrations and template repositories
+### Demo Mode
+- Active when `.plan/` does not exist
+- Uses files from `.demo/` (read/write)
+- Watches `.demo/` and `.demo/tests/` for changes
+- Ships with example demo data and tests under `.demo/` for quick demos
 
 ## Architecture
 

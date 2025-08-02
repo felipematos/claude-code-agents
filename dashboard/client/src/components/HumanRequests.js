@@ -142,7 +142,13 @@ const HumanRequests = () => {
       setError(null);
       const content = await api.getHumanRequests();
       setRawContent(content);
-      setHumanRequests(api.parseHumanRequests(content));
+      const parsed = api.parseHumanRequests(content);
+      // Ensure structure safety to avoid undefined length errors
+      setHumanRequests({
+        pending: Array.isArray(parsed?.pending) ? parsed.pending : [],
+        in_progress: Array.isArray(parsed?.in_progress) ? parsed.in_progress : [],
+        resolved: Array.isArray(parsed?.resolved) ? parsed.resolved : []
+      });
     } catch (err) {
       setError(err.message);
       console.error('Failed to load human requests:', err);
@@ -154,7 +160,12 @@ const HumanRequests = () => {
   const setupWebSocket = () => {
     WebSocketService.onHumanRequestsUpdate((updatedContent) => {
       setRawContent(updatedContent);
-      setHumanRequests(api.parseHumanRequests(updatedContent));
+      const parsed = api.parseHumanRequests(updatedContent);
+      setHumanRequests({
+        pending: Array.isArray(parsed?.pending) ? parsed.pending : [],
+        in_progress: Array.isArray(parsed?.in_progress) ? parsed.in_progress : [],
+        resolved: Array.isArray(parsed?.resolved) ? parsed.resolved : []
+      });
     });
   };
 
@@ -529,21 +540,21 @@ ${request.context}
         <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
           <Tab 
             label={
-              <Badge badgeContent={humanRequests.pending.length} color="warning">
+              <Badge badgeContent={(humanRequests?.pending || []).length} color="warning">
                 Pending
               </Badge>
             } 
           />
           <Tab 
             label={
-              <Badge badgeContent={humanRequests.in_progress.length} color="primary">
+              <Badge badgeContent={(humanRequests?.in_progress || []).length} color="primary">
                 In Progress
               </Badge>
             } 
           />
           <Tab 
             label={
-              <Badge badgeContent={humanRequests.resolved.length} color="success">
+              <Badge badgeContent={(humanRequests?.resolved || []).length} color="success">
                 Resolved
               </Badge>
             } 
@@ -553,7 +564,7 @@ ${request.context}
 
       {/* Tab Panels */}
       <TabPanel value={activeTab} index={0}>
-        {humanRequests.pending.length === 0 ? (
+        {(humanRequests?.pending || []).length === 0 ? (
           <Paper sx={{ p: 4, textAlign: 'center' }}>
             <PendingIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
             <Typography variant="h6" color="text.secondary">
@@ -564,14 +575,14 @@ ${request.context}
             </Typography>
           </Paper>
         ) : (
-          filterRequests(humanRequests.pending).map((request, index) => (
+          filterRequests(humanRequests?.pending || []).map((request, index) => (
             <RequestCard key={`pending-${index}`} request={request} status="pending" />
           ))
         )}
       </TabPanel>
 
       <TabPanel value={activeTab} index={1}>
-        {humanRequests.in_progress.length === 0 ? (
+        {(humanRequests?.in_progress || []).length === 0 ? (
           <Paper sx={{ p: 4, textAlign: 'center' }}>
             <ScheduleIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
             <Typography variant="h6" color="text.secondary">
@@ -582,14 +593,14 @@ ${request.context}
             </Typography>
           </Paper>
         ) : (
-          filterRequests(humanRequests.in_progress).map((request, index) => (
+          filterRequests(humanRequests?.in_progress || []).map((request, index) => (
             <RequestCard key={`in_progress-${index}`} request={request} status="in_progress" />
           ))
         )}
       </TabPanel>
 
       <TabPanel value={activeTab} index={2}>
-        {humanRequests.resolved.length === 0 ? (
+        {(humanRequests?.resolved || []).length === 0 ? (
           <Paper sx={{ p: 4, textAlign: 'center' }}>
             <CheckCircleIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
             <Typography variant="h6" color="text.secondary">
@@ -600,7 +611,7 @@ ${request.context}
             </Typography>
           </Paper>
         ) : (
-          filterRequests(humanRequests.resolved).map((request, index) => (
+          filterRequests(humanRequests?.resolved || []).map((request, index) => (
             <RequestCard key={`resolved-${index}`} request={request} status="resolved" />
           ))
         )}
