@@ -19,12 +19,7 @@
         "urgent_fix",
         "deployment",
         "cleanup",
-        "human_input_required",
-        "dashboard_start",
-        "dashboard_stop",
-        "dashboard_restart",
-        "dashboard_health_check",
-        "dashboard_configure"
+        "human_input_required"
       ],
       "description": "Type of task to be performed"
     },
@@ -41,8 +36,12 @@
         "UI-Test-Designer",
         "UI-Tester",
         "Product-Manager",
-        "Cleaner",
-        "Dashboard-Manager"
+        "Code-Reviewer",
+        "DevOps-Engineer",
+        "Strategist",
+        "Product-Owner",
+        "Human-Concierge",
+        "Cleaner"
       ],
       "description": "Agent responsible for executing this task"
     },
@@ -217,20 +216,17 @@
     },
     {
       "id": "TASK-005",
-      "type": "dashboard_start",
+      "type": "cleanup",
       "status": "pending",
-      "agent": "Dashboard-Manager",
-      "priority": "medium",
+      "agent": "Cleaner",
+      "priority": "low",
       "created_at": "2024-01-15T09:00:00Z",
       "updated_at": "2024-01-15T09:00:00Z",
       "depends_on": [],
       "payload": {
-        "title": "Start Claude Code Agents Dashboard",
-        "description": "Initialize and start the web-based management dashboard",
-        "action": "start",
-        "client_port": 3001,
-        "server_port": 3002,
-        "auto_restart": true
+        "title": "Archive old log files",
+        "description": "Clean up log files that exceed size thresholds",
+        "target_files": [".plan/test_log.md", ".plan/review-report.md"]
       }
     }
   ]

@@ -188,8 +188,8 @@ const Setup = () => {
           <Box sx={{ mt: 2 }}>
             <Alert severity="info" sx={{ mb: 2 }}>
               {(repoStatus?.demoMode || repoStatus?.canSimulate)
-                ? 'This is a template/demo repository. The setup will be simulated and show you what would happen in a real project.'
-                : 'This will execute the actual setup process for your project repository.'}
+                ? 'Running in demo mode. Data is read and written under .demo (including .demo/tests). Click the button below to launch the Setup Wizard simulation. It will show a full step-by-step report of what would run in a real repository.'
+                : 'Running in real mode. Data is read and written under .plan (including .plan/tests). Missing files will be initialized from templates on first run. Click the button below to execute the setup process for your repository.'}
             </Alert>
             <Typography variant="h6" gutterBottom>
               Setup Summary

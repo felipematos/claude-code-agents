@@ -44,16 +44,19 @@ On every run, you MUST follow this sequence (except when user explicitly asks yo
 ### Agent Responsibilities
 
 **Development Flow**:
-- `Strategist` → `Product-Owner` → `Task-Coder` → `Code-Reviewer` → `Tester`
+- `Strategist` → `Product-Owner` → `Product-Manager` → `Task-Coder` → `Code-Reviewer` → `Tester` → `Product-Manager`
 
 **Testing Flow**:
-- `Tester` → `UI-Test-Designer` → `UI-Tester` (for UI components)
+- `Tester` → `UI-Test-Designer` → `UI-Tester` (for UI components) → `Product-Manager`
 
 **Deployment Flow**:
-- `Tester` → `DevOps-Engineer` → Production
+- `Tester` → `DevOps-Engineer` → Staging → Production → `Product-Manager`
 
 **Maintenance Flow**:
 - `Cleaner` → `Code-Reviewer` → `Tester`
+
+**Sprint Management**
+- `Product-Manager` → `Task-Coder` → `Code-Reviewer` → `Tester` → `Product-Manager`
 
 ### FAILURE RESPONSE
 

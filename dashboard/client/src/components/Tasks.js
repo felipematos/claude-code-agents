@@ -215,56 +215,133 @@ const Tasks = () => {
     });
   };
 
-  const handleDragEnd = async (result) => {
-    if (!result.destination) return;
+  // Stable reorder helper to avoid react-beautiful-dnd warnings and to give immediate feedback
+  const reorderWithinList = (list, startIndex, endIndex) => {
+    const result = Array.from(list);
+    const [removed] = result.splice(startIndex, 1);
+    result.splice(endIndex, 0, removed);
+    return result;
+  };
 
+  const handleDragEnd = async (result) => {
     const { source, destination, draggableId } = result;
-    
-    // If dropped in the same position, do nothing
+    if (!destination) return;
+
+    // If dropped in the same list and position, nothing to do
     if (source.droppableId === destination.droppableId && source.index === destination.index) {
       return;
     }
 
-    // Find the task being moved - ensure string comparison
+    // Snapshot lists by status for stable UI update
+    const pending = tasks.filter(t => t.status === 'pending');
+    const inProgress = tasks.filter(t => t.status === 'in_progress');
+    const done = tasks.filter(t => t.status === 'done');
+    const blocked = tasks.filter(t => t.status === 'blocked');
+
+    const lists = { pending, in_progress: inProgress, done, blocked };
+
+    // Find dragged task
     const task = tasks.find(t => String(t.id || t.task_id) === String(draggableId));
-    if (!task) {
-      console.warn('Task not found for draggableId:', draggableId);
-      return;
+    if (!task) return;
+
+    const sourceList = lists[source.droppableId] || [];
+    const destList = lists[destination.droppableId] || [];
+
+    // If moving within the same column, reorder locally for immediate feedback
+    if (source.droppableId === destination.droppableId) {
+      const newOrder = reorderWithinList(sourceList, source.index, destination.index);
+      lists[source.droppableId] = newOrder;
+      // Recompose tasks in order of columns to maintain stable UI (order within status not persisted server-side)
+      const next = [
+        ...lists.pending,
+        ...lists.in_progress,
+        ...lists.done,
+        ...lists.blocked
+      ];
+      setTasks(next);
+      return; // No server update needed when just reordering within same status
     }
 
-    // Update task status based on destination column
-    const newStatus = destination.droppableId;
-    
-    // If status hasn't changed, no need to update
-    if (task.status === newStatus) {
-      return;
-    }
-    
+    // Moving across columns: optimistic update UI, then persist
+    const movedTask = { ...task, status: destination.droppableId };
+    // Remove from source list and insert into destination list
+    const newSource = Array.from(sourceList);
+    const [removed] = newSource.splice(source.index, 1);
+    const newDest = Array.from(destList);
+    newDest.splice(destination.index, 0, movedTask);
+
+    lists[source.droppableId] = newSource;
+    lists[destination.droppableId] = newDest;
+
+    const optimistic = [
+      ...lists.pending,
+      ...lists.in_progress,
+      ...lists.done,
+      ...lists.blocked
+    ];
+    setTasks(optimistic);
+
     try {
-      const updatedTask = { ...task, status: newStatus };
-      await api.updateTask(task.id || task.task_id, updatedTask);
-      
-      // Update local state
-      setTasks(prevTasks => 
-        prevTasks.map(t => String(t.id || t.task_id) === String(task.id || task.task_id) ? updatedTask : t)
-      );
-      
+      await api.updateTask(task.id || task.task_id, movedTask);
+
+      // If moved to blocked, create a linked human request for clarification
+      if (destination.droppableId === 'blocked') {
+        try {
+          // Build a minimal clarification entry appended to human-requests.md
+          const clarifyTitle = `Clarification needed for ${movedTask.payload?.title || movedTask.id || movedTask.task_id}`;
+          const clarifyBlock = [
+            '',
+            '### HR-' + (Date.now()) + ': ' + clarifyTitle,
+            '**Type:** Agent Clarification',
+            '**Priority:** MEDIUM',
+            '**Requester:** System',
+            '**Date:** ' + new Date().toISOString().slice(0,10),
+            '',
+            '**Description:**',
+            `Task ${movedTask.id || movedTask.task_id} was marked as BLOCKED. Please provide missing info or guidance to unblock.`,
+            '',
+            '**Linked Task:**',
+            (movedTask.id || movedTask.task_id),
+            '',
+            '**Status:** pending',
+            '',
+            '---',
+            ''
+          ].join('\n');
+
+          const current = await api.getHumanRequests();
+          const existing = typeof current?.content === 'string' ? current.content : '';
+          const updatedContent = existing.includes('## 🔄 Pending Requests')
+            ? existing.replace('## 🔄 Pending Requests', '## 🔄 Pending Requests' + '\n' + clarifyBlock)
+            : (existing + '\n## 🔄 Pending Requests\n' + clarifyBlock);
+
+          await api.updateHumanRequests(updatedContent);
+          toast.info('Created linked clarification in Human Requests');
+        } catch (e) {
+          console.warn('Failed to create linked clarification:', e);
+        }
+      }
+
       const settings = JSON.parse(localStorage.getItem('dashboard-settings') || '{}');
       const notificationsEnabled = settings.notifications !== false;
-      
       if (notificationsEnabled) {
-        if (newStatus === 'done') {
+        if (destination.droppableId === 'done') {
           toast.success('Task completed!');
-        } else if (newStatus === 'blocked') {
-          toast.error('Task marked as blocked');
+        } else if (destination.droppableId === 'blocked') {
+          toast.warning('Task marked as blocked');
         } else {
-          toast(`Task moved to ${newStatus.replace('_', ' ')}`);
+          toast.info(`Task moved to ${destination.droppableId.replace('_', ' ')}`);
         }
       }
     } catch (err) {
-      setError(`Failed to update task status: ${err.message}`);
       console.error('Drag and drop update error:', err);
+      setError(`Failed to update task status: ${err.message}`);
       toast.error('Failed to update task status');
+      // Revert UI by reloading from API
+      try {
+        const fresh = await api.getTasks();
+        if (Array.isArray(fresh)) setTasks(fresh);
+      } catch {}
     }
   };
 
@@ -483,6 +560,74 @@ const Tasks = () => {
     return getFilteredTasks().filter(task => task.status === status);
   };
 
+  // Helper to render linked items: expect arrays like task.tests, task.human_requests, task.sprints, task.epics
+  const LinkedItems = ({ task }) => {
+    const items = [];
+
+    if (Array.isArray(task.human_requests) && task.human_requests.length) {
+      items.push({
+        label: 'Human Requests',
+        entries: task.human_requests.map(id => ({
+          id,
+          href: `/human-requests?ref=${encodeURIComponent(id)}`
+        }))
+      });
+    }
+    if (Array.isArray(task.tests) && task.tests.length) {
+      items.push({
+        label: 'Tests',
+        entries: task.tests.map(name => ({
+          id: name,
+          href: `/tests?task=${encodeURIComponent(task.id || task.task_id)}&name=${encodeURIComponent(name)}`
+        }))
+      });
+    }
+    if (Array.isArray(task.sprints) && task.sprints.length) {
+      items.push({
+        label: 'Sprints',
+        entries: task.sprints.map(s => ({
+          id: s,
+          href: `/roadmap?sprint=${encodeURIComponent(s)}`
+        }))
+      });
+    }
+    if (Array.isArray(task.epics) && task.epics.length) {
+      items.push({
+        label: 'Epics',
+        entries: task.epics.map(e => ({
+          id: e,
+          href: `/roadmap?epic=${encodeURIComponent(e)}`
+        }))
+      });
+    }
+
+    if (!items.length) return null;
+
+    return (
+      <Box sx={{ mt: 1.5 }}>
+        {items.map(section => (
+          <Box key={section.label} sx={{ mb: 0.5 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+              {section.label}:
+            </Typography>{' '}
+            {section.entries.map((entry, i) => (
+              <React.Fragment key={entry.id || i}>
+                <Button
+                  href={entry.href}
+                  size="small"
+                  variant="text"
+                  sx={{ minWidth: 'auto', p: 0.2, mr: 0.75, textTransform: 'none' }}
+                >
+                  {entry.id}
+                </Button>
+              </React.Fragment>
+            ))}
+          </Box>
+        ))}
+      </Box>
+    );
+  };
+
   const TaskCard = ({ task, index }) => (
     <Draggable draggableId={String(task.id || task.task_id)} index={index}>
       {(provided, snapshot) => (
@@ -583,6 +728,9 @@ const Tasks = () => {
                     </IconButton>
                   </Box>
                 </Box>
+
+                {/* Linked Items area */}
+                <LinkedItems task={task} />
               </Box>
             </Box>
           </CardContent>

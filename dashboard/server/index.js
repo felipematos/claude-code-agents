@@ -576,10 +576,51 @@ app.get('/api/setup/status', (req, res) => {
   });
 });
 
+/**
+ * Helper: If file missing in current PLAN_DIR and we're in demo mode,
+ * try to read the corresponding file from the repository root .demo fallback.
+ */
+async function readWithDemoFallbackJson(filename) {
+  const primary = await FileManager.readJsonFile(filename);
+  if (primary && Array.isArray(primary)) return primary;
+
+  // Fallback for demo mode: read from repo root .demo if present
+  if (DEMO_MODE) {
+    try {
+      const demoPath = path.join(REPO_ROOT, '.demo', filename);
+      if (await fs.pathExists(demoPath)) {
+        const content = await fs.readFile(demoPath, 'utf8');
+        const parsed = JSON.parse(content);
+        return parsed;
+      }
+    } catch (e) {
+      console.warn(`Demo fallback read failed for ${filename}:`, e.message);
+    }
+  }
+  return primary || [];
+}
+
+async function readWithDemoFallbackMarkdown(filename) {
+  const primary = await FileManager.readMarkdownFile(filename);
+  if (primary) return primary;
+
+  if (DEMO_MODE) {
+    try {
+      const demoPath = path.join(REPO_ROOT, '.demo', filename);
+      if (await fs.pathExists(demoPath)) {
+        return await fs.readFile(demoPath, 'utf8');
+      }
+    } catch (e) {
+      console.warn(`Demo fallback read failed for ${filename}:`, e.message);
+    }
+  }
+  return primary || '';
+}
+
 // Get all tasks
 app.get('/api/tasks', async (req, res) => {
   try {
-    const tasks = await FileManager.readJsonFile('tasks.json') || [];
+    const tasks = await readWithDemoFallbackJson('tasks.json');
     res.json(tasks);
   } catch (error) {
     res.status(500).json({ error: 'Failed to read tasks' });
@@ -615,7 +656,7 @@ app.put('/api/tasks/:taskId', async (req, res) => {
 // Get human requests
 app.get('/api/human-requests', async (req, res) => {
   try {
-    const content = await FileManager.readMarkdownFile('human-requests.md');
+    const content = await readWithDemoFallbackMarkdown('human-requests.md');
     res.json({ content: content || '' });
   } catch (error) {
     res.status(500).json({ error: 'Failed to read human requests' });
@@ -641,7 +682,7 @@ app.put('/api/human-requests', async (req, res) => {
 // Get roadmap
 app.get('/api/roadmap', async (req, res) => {
   try {
-    const content = await FileManager.readMarkdownFile('roadmap.md');
+    const content = await readWithDemoFallbackMarkdown('roadmap.md');
     res.json({ content: content || '' });
   } catch (error) {
     res.status(500).json({ error: 'Failed to read roadmap' });
@@ -651,7 +692,7 @@ app.get('/api/roadmap', async (req, res) => {
 // Get user stories
 app.get('/api/user-stories', async (req, res) => {
   try {
-    const content = await FileManager.readMarkdownFile('user_stories.md');
+    const content = await readWithDemoFallbackMarkdown('user_stories.md');
     if (!content) {
       return res.json({ stories: [] });
     }

@@ -21,7 +21,6 @@ This repository contains a collection of specialized AI agents that work togethe
 - **UI-Test-Designer**: Designs comprehensive UI test workflows
 - **UI-Tester**: Executes UI tests with detailed logging and failure handling
 - **Human-Concierge**: Manages human-agent interaction, processes all human requests including feature requests, bug reports, agent clarifications, and strategic decisions
-- **Dashboard-Manager**: Manages the web-based dashboard service lifecycle
 - **Cleaner**: Performs system maintenance, cleans up logs, and resolves state inconsistencies.
 
 ## Key Features
@@ -140,26 +139,17 @@ The dashboard determines its mode dynamically:
 - **Agent Status**: Monitor agent activity and system health
 - **WebSocket Integration**: Real-time updates without page refresh
 
-### Dashboard-Manager Agent
+### Dashboard Service
 
-The Dashboard-Manager agent can automatically start, stop, and monitor the dashboard service:
+The dashboard service is managed externally through starter scripts, not through the agent system. The dashboard orchestrates Claude Code instances rather than being managed by them.
 
-```json
-{
-  "id": "DASHBOARD-START-001",
-  "type": "dashboard_start",
-  "agent": "Dashboard-Manager",
-  "priority": "high",
-  "payload": {
-    "title": "Start Claude Code Agents Dashboard",
-    "action": "start",
-    "client_port": 3001,
-    "server_port": 3002
-  }
-}
+To start the dashboard:
+```bash
+cd dashboard
+npm start
 ```
 
-See `agents/Dashboard-Manager.md` for complete agent documentation.
+The dashboard will then be available to spawn and manage Claude Code agent instances.
 
 ## Usage Instructions
 
