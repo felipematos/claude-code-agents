@@ -6,22 +6,48 @@ A comprehensive multi-agent system for automated software development using Clau
 
 ## Overview
 
-This repository contains a collection of specialized AI agents that work together to manage the entire software development lifecycle. Each agent has specific responsibilities and communicates through a shared task management system, implementing quality gates at every stage of development.
+This repository contains a collection of specialized AI agents that work together to manage the entire software development lifecycle. Each agent operates independently but coordinates through a shared task management system (`tasks.json`) and follows strict Test-Driven Development (TDD) principles.
 
-## Agent Architecture
+### Key System Features
+
+#### Self-Improvement Workflow
+- **Learning Capture**: Agents submit learnings to the Learner for validation
+- **Human Validation**: Dashboard Self-Improvement tab for learning review
+- **Instruction Updates**: Agent-Improver converts validated learnings into agent instructions
+- **Change Tracking**: Complete audit trail of all agent modifications with revert capability
+
+#### Performance Optimization
+- **Selective Task Reading**: Agents filter tasks.json by relevance to reduce token usage
+- **Instruction Area Management**: Maximum 20 concise instructions per agent
+- **Prompt Optimization**: Agent-Improver can propose full prompt integration with human approval
+
+#### Escalation Chain
+- **Coder/Tester/Reviewer** → **Product-Manager** → **Product-Owner** → **Strategist**
+- Higher-level agents notify delegated agents after decisions
+- Strict task-based communication (no direct agent-to-agent communication)
 
 ### Core Development Agents
-- **Product-Manager**: Creates epics, user stories, and manages product roadmap
-- **Task-Coder**: Implements features and fixes based on tasks
-- **Tester**: Implements 4-tier testing strategy following TDD principles
-- **Code-Reviewer**: Reviews code quality and ensures standards compliance
-- **DevOps-Engineer**: Manages deployment workflows and infrastructure
+- **Strategist**: High-level strategy and architecture decisions
+- **Product-Owner**: Requirements gathering and user story creation
+- **Product-Manager**: Project coordination and timeline management
+- **Task-Coder**: Feature implementation and bug fixes
+- **Code-Reviewer**: Code quality and security review
+- **Tester**: Testing strategy and quality assurance
+- **DevOps-Engineer**: Deployment and infrastructure management
 
-### Specialized Agents
-- **UI-Test-Designer**: Designs comprehensive UI test workflows
-- **UI-Tester**: Executes UI tests with detailed logging and failure handling
-- **Human-Concierge**: Manages human-agent interaction, processes all human requests including feature requests, bug reports, agent clarifications, and strategic decisions
-- **Cleaner**: Performs system maintenance, cleans up logs, and resolves state inconsistencies.
+### UI Testing Agents
+- **UI-Test-Designer**: UI test workflow design
+- **UI-Tester**: Automated UI test execution
+
+### System Management Agents
+- **Cleaner**: Code cleanup and maintenance
+- **Human-Concierge**: Human-agent bridge, request processing, escalation management
+
+### Self-Improvement Agents
+- **Architecturer**: Technology research, architectural guidance, performance optimization analysis
+- **Learner**: Learning management, knowledge organization, system improvement tracking
+- **Agent-Improver**: Agent instruction updates, prompt optimization, change management
+- **Compliance-Officer**: Ensures regulatory compliance, data protection, and audit readiness
 
 ## Key Features
 

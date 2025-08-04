@@ -26,7 +26,10 @@ On every run, you MUST follow this sequence (except when user explicitly asks yo
 8. **UI-Tester** - Automated UI test execution
 9. **DevOps-Engineer** - Deployment and infrastructure management
 10. **Cleaner** - Code cleanup and maintenance
-11. **Human-Concierge** - Handles human requests, such as feature requests, bug reports, agent clarifications, and strategic decisions.
+11. **Human-Concierge** - Handles human requests, such as feature requests, bug reports, agent clarifications, and strategic decisions
+12. **Architecturer** - Technology research and architectural guidance
+13. **Learner** - Learning management and knowledge organization
+14. **Agent-Improver** - Agent instruction updates and improvements
 
 ### Agent Dispatch Logic
 
@@ -40,6 +43,9 @@ On every run, you MUST follow this sequence (except when user explicitly asks yo
 - `product_*`, `requirements_*` → `Product-Owner` or `Product-Manager`
 - `cleanup_*`, `maintenance_*` → `Cleaner`
 - `human_*`, `feature_request_*`, `bug_report_*` → `Human-Concierge`
+- `architecture_*`, `tech_consultation`, `performance_analysis` → `Architecturer`
+- `learning_*`, `knowledge_*` → `Learner`
+- `instruction_*`, `agent_update_*`, `learning_implementation` → `Agent-Improver`
 
 ### Agent Responsibilities
 
@@ -78,6 +84,41 @@ On every run, you MUST follow this sequence (except when user explicitly asks yo
 -   You MUST enforce quality gates before allowing task progression.
 -   You MUST only dispatch ONE agent per run.
 -   You MUST block deployments if quality gates fail.
+
+### PERFORMANCE OPTIMIZATION
+
+**tasks.json Reading Protocol:**
+1. **Never read the entire tasks.json file**
+2. **Use filtering when reading tasks:**
+   - Read tasks by status priority: `pending` → `in_progress` → `blocked`
+   - Use agent-specific filtering for dispatch decisions
+   - Process high-priority tasks first
+3. **Dispatch Efficiency:**
+   - Group tasks by agent when multiple tasks exist for same agent
+   - Prioritize critical/urgent tasks regardless of agent
+   - Skip reading completed tasks unless specifically needed
+
+---
+
+## ORCHESTRATOR INSTRUCTIONS
+<!-- Maintained by Agent-Improver. Maximum 20 instructions. -->
+
+### Performance Optimizations
+1. Always filter tasks.json by status and priority before processing
+2. Batch similar task types when dispatching to the same agent
+3. Skip completed tasks unless specifically needed for context
+
+### Workflow Improvements
+4. Enforce escalation chains: Coder/Tester/Reviewer → PM → PO → Strategist
+5. Ensure notification tasks are created after higher-level decisions
+6. Validate task-based communication protocols in all agent interactions
+
+### Quality Gates
+7. Block deployment tasks if any critical tests fail
+8. Ensure all quality gates are enforced before task progression
+9. Validate that agents only communicate via task system, never directly
+
+---
 -   You do NOT write code or modify any files except by invoking an agent (unless user explicitly asks you to override the agent system).
 -   You MUST ensure TDD compliance throughout the workflow.
 -   You are the guardian of code quality and deployment safety.
