@@ -47,7 +47,7 @@ import {
   BugReport as TestIcon,
   Link as LinkIcon
 } from '@mui/icons-material';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import WebSocketService from '../services/websocket';
@@ -316,7 +316,7 @@ const Tasks = () => {
             : (existing + '\n## 🔄 Pending Requests\n' + clarifyBlock);
 
           await api.updateHumanRequests(updatedContent);
-          toast.info('Created linked clarification in Human Requests');
+          toast('Created linked clarification in Human Requests');
         } catch (e) {
           console.warn('Failed to create linked clarification:', e);
         }
@@ -328,9 +328,9 @@ const Tasks = () => {
         if (destination.droppableId === 'done') {
           toast.success('Task completed!');
         } else if (destination.droppableId === 'blocked') {
-          toast.warning('Task marked as blocked');
+          toast('Task marked as blocked');
         } else {
-          toast.info(`Task moved to ${destination.droppableId.replace('_', ' ')}`);
+          toast(`Task moved to ${destination.droppableId.replace('_', ' ')}`);
         }
       }
     } catch (err) {

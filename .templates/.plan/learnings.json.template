@@ -1,9 +1,42 @@
 {
-  "learnings": [],
+  "version": "1.0.0",
+  "last_updated": "YYYY-MM-DDTHH:mm:ss.sssZ",
+  "learnings": [
+    {
+      "id": "learning_001",
+      "title": "Example Learning Entry",
+      "description": "This is an example learning entry showing the structure",
+      "author_agent": "Learner",
+      "destination_agent": "Task-Coder",
+      "confidence_score": 85,
+      "status": "pending_validation",
+      "category": "best_practice",
+      "tags": ["example", "template"],
+      "created_at": "YYYY-MM-DDTHH:mm:ss.sssZ",
+      "validated_at": null,
+      "validated_by": null,
+      "applied_at": null,
+      "rationale": "Example rationale for why this learning is valuable",
+      "evidence": "Supporting evidence or examples",
+      "proposed_instruction": "Example instruction that would be added to the destination agent",
+      "validation_notes": null,
+      "priority": "medium"
+    }
+  ],
   "metadata": {
-    "total_learnings": 0,
-    "pending_validation": 0,
-    "implemented_learnings": 0,
-    "last_updated": "YYYY-MM-DDTHH:mm:ss.sssZ"
-  }
+    "total_learnings": 1,
+    "pending_validation": 1,
+    "validated": 0,
+    "applied": 0,
+    "rejected": 0,
+    "categories": {
+      "best_practice": 1,
+      "performance": 0,
+      "security": 0,
+      "workflow": 0,
+      "tool_usage": 0,
+      "error_handling": 0
+    }
+  },
+  "schema_version": "1.0.0"
 }

@@ -99,13 +99,17 @@ check_ports() {
 
 # Function to start the dashboard
 start_dashboard() {
+    local demo_mode=${1:-false}
+    
     print_status "Starting Claude Code Agents Dashboard..."
     print_status "Client will be available at: http://localhost:$CLIENT_PORT"
     print_status "Server API will be available at: http://localhost:$SERVER_PORT"
     print_status "Press Ctrl+C to stop the dashboard"
     
-    # Check if this is a template repository (no real .plan directory with actual project files)
-    if [ ! -f "../.plan/tasks.json" ] || [ ! -s "../.plan/tasks.json" ]; then
+    if [ "$demo_mode" = "true" ]; then
+        print_status "Running in DEMO MODE with sample data"
+        NODE_ENV=demo npm start
+    elif [ ! -f "../.plan/tasks.json" ] || [ ! -s "../.plan/tasks.json" ]; then
         print_status "Template repository detected - running in test mode"
         NODE_ENV=test npm start
     else
@@ -125,12 +129,14 @@ show_help() {
     echo "  -c, --check    Check prerequisites only"
     echo "  -i, --install  Install dependencies only"
     echo "  -p, --ports    Check port availability only"
+    echo "  -d, --demo     Start in demo mode with sample data"
     echo ""
     echo "Examples:"
     echo "  $0              Start the dashboard (default)"
     echo "  $0 --check     Check if Node.js and npm are available"
     echo "  $0 --install   Install dependencies without starting"
     echo "  $0 --ports     Check if ports 3001 and 3002 are available"
+    echo "  $0 --demo      Start the dashboard in demo mode"
 }
 
 # Main execution
@@ -157,12 +163,19 @@ main() {
             check_ports
             exit 0
             ;;
+        -d|--demo)
+            print_status "Starting Claude Code Agents Dashboard in demo mode..."
+            check_nodejs
+            install_dependencies
+            check_ports
+            start_dashboard true
+            ;;
         start|"")
             print_status "Starting Claude Code Agents Dashboard..."
             check_nodejs
             install_dependencies
             check_ports
-            start_dashboard
+            start_dashboard false
             ;;
         *)
             print_error "Unknown option: $1"
