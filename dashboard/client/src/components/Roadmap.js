@@ -56,7 +56,9 @@ const Roadmap = () => {
     try {
       setLoading(true);
       setError(null);
-      const content = await api.getRoadmap();
+      const response = await api.getRoadmap();
+      // Handle both string and object responses
+      const content = typeof response === 'string' ? response : (response.content || JSON.stringify(response, null, 2));
       setRoadmapContent(content);
       setParsedRoadmap(parseRoadmapContent(content));
     } catch (err) {
@@ -68,9 +70,11 @@ const Roadmap = () => {
   };
 
   const setupWebSocket = () => {
-    WebSocketService.onRoadmapUpdate((updatedContent) => {
-      setRoadmapContent(updatedContent);
-      setParsedRoadmap(parseRoadmapContent(updatedContent));
+    WebSocketService.onRoadmapUpdate((updatedResponse) => {
+      // Handle both string and object responses
+      const content = typeof updatedResponse === 'string' ? updatedResponse : (updatedResponse.content || JSON.stringify(updatedResponse, null, 2));
+      setRoadmapContent(content);
+      setParsedRoadmap(parseRoadmapContent(content));
     });
   };
 

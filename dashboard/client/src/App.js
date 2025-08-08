@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
   Route,
-  Navigate
+  Navigate,
+  Link,
+  useLocation
 } from 'react-router-dom';
 import {
   ThemeProvider,
@@ -35,12 +37,15 @@ import {
   BugReport as TestIcon,
   Settings as SettingsIcon,
   Menu as MenuIcon,
-  Notifications as NotificationsIcon
+  Notifications as NotificationsIcon,
+  AutoAwesome as SelfImprovementIcon
 } from '@mui/icons-material';
 import { Toaster } from 'react-hot-toast';
 
 // Import components
 import Dashboard from './components/Dashboard';
+import SelfImprovementPanel from './components/SelfImprovementPanel';
+import SelfImprovementPage from './components/SelfImprovementPage';
 import TaskBoard from './components/TaskBoard';
 import HumanRequests from './components/HumanRequests';
 import Roadmap from './components/Roadmap';
@@ -77,23 +82,113 @@ const createAppTheme = (darkMode) => createTheme({
   },
 });
 
+// Navigation component that uses useLocation hook
+const NavigationDrawer = ({ menuItems, mobileOpen, setMobileOpen }) => {
+  const location = useLocation();
+  
+  return (
+    <div>
+      <Toolbar>
+        <Typography variant="h6" noWrap component="div">
+          Agent Squad
+        </Typography>
+      </Toolbar>
+      <Divider />
+      <List>
+        {menuItems.map((item) => (
+          <ListItem key={item.text} disablePadding>
+            <ListItemButton
+              selected={location.pathname === item.path}
+              component={Link}
+              to={item.path}
+              onClick={() => {
+                if (item.action) {
+                  item.action();
+                }
+                setMobileOpen(false);
+              }}
+            >
+              <ListItemIcon>
+                {item.badge ? (
+                  <Badge badgeContent={item.badge} color="error">
+                    {item.icon}
+                  </Badge>
+                ) : (
+                  item.icon
+                )}
+              </ListItemIcon>
+              <ListItemText primary={item.text} />
+            </ListItemButton>
+          </ListItem>
+        ))}
+      </List>
+    </div>
+  );
+};
+
 function App() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
   const [activeTasks, setActiveTasks] = useState([]);
   const [pendingRequests, setPendingRequests] = useState(0);
+  const [pendingLearnings, setPendingLearnings] = useState(0);
   const [showNotificationPanel, setShowNotificationPanel] = useState(false);
+  const [showSelfImprovementPanel, setShowSelfImprovementPanel] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [repositoryType, setRepositoryType] = useState(null);
-  const [currentPath, setCurrentPath] = useState('/dashboard');
+
+  const addNotification = useCallback((message, type = 'info') => {
+    const notification = {
+      id: Date.now() + Math.random(),
+      message,
+      type,
+      timestamp: new Date().toISOString()
+    };
+    
+    setNotifications(prev => [notification, ...prev.slice(0, 49)]); // Keep last 50
+    
+    // Browser notification if enabled
+    const settings = JSON.parse(localStorage.getItem('dashboard-settings') || '{}');
+    if (settings.notifications && 'Notification' in window && Notification.permission === 'granted') {
+      new Notification('Agent Squad', {
+        body: message,
+        icon: '/favicon.ico'
+      });
+    }
+  }, []);
+
+  const loadDashboardData = useCallback(async () => {
+    try {
+      const tasks = await api.getTasks();
+      const activeTasks = tasks.filter(task => 
+        task.status === 'in_progress' || task.status === 'pending'
+      ).length;
+      setActiveTasks(activeTasks);
+
+      const requestsContent = await api.getHumanRequests();
+      const parsedRequests = api.parseHumanRequests(requestsContent);
+      const pendingCount = parsedRequests.pending ? parsedRequests.pending.length : 0;
+      setPendingRequests(pendingCount);
+
+      const learnings = await api.getLearnings();
+      if (learnings && learnings.learnings) {
+        const pendingLearningsCount = learnings.learnings.filter(l => l.status === 'pending_validation').length;
+        setPendingLearnings(pendingLearningsCount);
+      }
+    } catch (error) {
+      console.error('Failed to load dashboard data:', error);
+      addNotification('Failed to load dashboard data', 'error');
+    }
+  }, [addNotification]);
 
   useEffect(() => {
     // Check repository type first
     const checkRepositoryType = async () => {
       try {
         const repoType = await api.getRepositoryType();
+        console.log('Repository type detected:', repoType);
         setRepositoryType(repoType);
         
         if (repoType === 'existing_project') {
@@ -183,6 +278,8 @@ function App() {
           // Close current panel
           window.dispatchEvent(new CustomEvent('keyboard-shortcut', { detail: { action: 'escape' } }));
           break;
+        default:
+          break;
       }
     };
 
@@ -194,27 +291,7 @@ function App() {
       window.removeEventListener('storage', handleSettingsChange);
       window.removeEventListener('settings-changed', handleSettingsChange);
     };
-  }, []);
-
-  const addNotification = (message, type = 'info') => {
-    const notification = {
-      id: Date.now() + Math.random(),
-      message,
-      type,
-      timestamp: new Date().toISOString()
-    };
-    
-    setNotifications(prev => [notification, ...prev.slice(0, 49)]); // Keep last 50
-    
-    // Browser notification if enabled
-    const settings = JSON.parse(localStorage.getItem('dashboard-settings') || '{}');
-    if (settings.notifications && 'Notification' in window && Notification.permission === 'granted') {
-      new Notification('Agent Squad', {
-        body: message,
-        icon: '/favicon.ico'
-      });
-    }
-  };
+  }, [loadDashboardData, addNotification]);
 
   const clearNotification = (id) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
@@ -222,24 +299,6 @@ function App() {
 
   const clearAllNotifications = () => {
     setNotifications([]);
-  };
-
-  const loadDashboardData = async () => {
-    try {
-      const tasks = await api.getTasks();
-      const activeTasks = tasks.filter(task => 
-        task.status === 'in_progress' || task.status === 'pending'
-      ).length;
-      setActiveTasks(activeTasks);
-
-      const requestsContent = await api.getHumanRequests();
-      const parsedRequests = api.parseHumanRequests(requestsContent);
-      const pendingCount = parsedRequests.pending ? parsedRequests.pending.length : 0;
-      setPendingRequests(pendingCount);
-    } catch (error) {
-      console.error('Failed to load dashboard data:', error);
-      addNotification('Failed to load dashboard data', 'error');
-    }
   };
 
   const handleDrawerToggle = () => {
@@ -288,44 +347,21 @@ function App() {
       icon: <SettingsIcon />,
       path: '/settings',
       badge: null
+    },
+    {
+      text: 'Self-Improvement',
+      icon: <SelfImprovementIcon />,
+      path: '/self-improvement',
+      badge: pendingLearnings > 0 ? pendingLearnings : null
     }
   ];
 
   const drawer = (
-    <div>
-      <Toolbar>
-        <Typography variant="h6" noWrap component="div">
-          Agent Squad
-        </Typography>
-      </Toolbar>
-      <Divider />
-      <List>
-        {menuItems.map((item) => (
-          <ListItem key={item.text} disablePadding>
-            <ListItemButton
-              selected={currentPath === item.path}
-              onClick={() => {
-                setCurrentPath(item.path);
-                setMobileOpen(false);
-              }}
-              component="a"
-              href={item.path}
-            >
-              <ListItemIcon>
-                {item.badge ? (
-                  <Badge badgeContent={item.badge} color="error">
-                    {item.icon}
-                  </Badge>
-                ) : (
-                  item.icon
-                )}
-              </ListItemIcon>
-              <ListItemText primary={item.text} />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
-    </div>
+    <NavigationDrawer 
+      menuItems={menuItems} 
+      mobileOpen={mobileOpen} 
+      setMobileOpen={setMobileOpen} 
+    />
   );
 
   if (isLoading) {
@@ -448,6 +484,7 @@ function App() {
                 </Box>
 
                 <Routes>
+                  <Route path="/self-improvement" element={<SelfImprovementPage />} />
                   <Route path="/" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/tasks" element={<TaskBoard />} />
@@ -461,7 +498,10 @@ function App() {
                 </Routes>
               </Box>
             </Box>
-
+            <SelfImprovementPanel
+              open={showSelfImprovementPanel}
+              onClose={() => setShowSelfImprovementPanel(false)}
+            />
             <Toaster
               position="bottom-right"
               toastOptions={{
@@ -568,6 +608,7 @@ function App() {
               >
                 <Toolbar />
                 <Routes>
+                  <Route path="/self-improvement" element={<SelfImprovementPage />} />
                   <Route path="/" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/tasks" element={<TaskBoard />} />
@@ -576,9 +617,14 @@ function App() {
                   <Route path="/templates" element={<Templates />} />
                   <Route path="/tests" element={<Tests />} />
                   <Route path="/settings" element={<Settings />} />
+
                 </Routes>
               </Box>
             </Box>
+            <SelfImprovementPanel
+              open={showSelfImprovementPanel}
+              onClose={() => setShowSelfImprovementPanel(false)}
+            />
             <Toaster
               position="bottom-right"
               toastOptions={{

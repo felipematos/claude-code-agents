@@ -22,13 +22,14 @@ This repository contains a collection of specialized AI agents that work togethe
 - **Prompt Optimization**: Agent-Improver can propose full prompt integration with human approval
 
 #### Escalation Chain
-- **Coder/Tester/Reviewer** → **Product-Manager** → **Product-Owner** → **Strategist**
+- **Coder/Tester/Reviewer** → **Product-Manager** → **Product-Owner** → **Architecturer** → **Strategist**
 - Higher-level agents notify delegated agents after decisions
 - Strict task-based communication (no direct agent-to-agent communication)
 
 ### Core Development Agents
 - **Strategist**: High-level strategy and architecture decisions
 - **Product-Owner**: Requirements gathering and user story creation
+- **Architecturer**: Technology research, architectural guidance, performance optimization analysis
 - **Product-Manager**: Project coordination and timeline management
 - **Task-Coder**: Feature implementation and bug fixes
 - **Code-Reviewer**: Code quality and security review
@@ -44,7 +45,6 @@ This repository contains a collection of specialized AI agents that work togethe
 - **Human-Concierge**: Human-agent bridge, request processing, escalation management
 
 ### Self-Improvement Agents
-- **Architecturer**: Technology research, architectural guidance, performance optimization analysis
 - **Learner**: Learning management, knowledge organization, system improvement tracking
 - **Agent-Improver**: Agent instruction updates, prompt optimization, change management
 - **Compliance-Officer**: Ensures regulatory compliance, data protection, and audit readiness
@@ -70,10 +70,11 @@ Our testing approach provides quality gates at each development stage:
 
 ### Development Lifecycle
 1. **Planning Phase**: Product-Manager creates epics and user stories
-2. **Development Phase**: Task-Coder implements features following TDD
-3. **Testing Phase**: 4-tier testing validation with quality gates
-4. **Review Phase**: Code-Reviewer ensures quality standards
-5. **Deployment Phase**: DevOps-Engineer manages deployment processes
+2. **Architecture Phase**: Architecturer provides technology guidance and performance analysis
+3. **Development Phase**: Task-Coder implements features following TDD
+4. **Testing Phase**: 4-tier testing validation with quality gates
+5. **Review Phase**: Code-Reviewer ensures quality standards
+6. **Deployment Phase**: DevOps-Engineer manages deployment processes
 
 ### Quality Gates
 - **Task Level**: Unit tests must pass (100% pass rate)

@@ -219,7 +219,26 @@ class ApiService {
     return stats;
   }
 
+  // Self-Improvement API
+  async getLearnings() {
+    return this.get('/learnings');
+  }
 
+  async approveLearning(learningId) {
+    return this.post('/learnings/approve', { id: learningId });
+  }
+
+  async getAgentChangelog() {
+    return this.get('/agents/changelog');
+  }
+
+  async getAgentDiff(agentName, commitHash) {
+    return this.get(`/agents/${agentName}/diff/${commitHash}`);
+  }
+
+  async revertAgent(agentName, commitHash) {
+    return this.post(`/agents/${agentName}/revert/${commitHash}`);
+  }
 }
 
 const api = new ApiService();

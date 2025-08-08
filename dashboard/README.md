@@ -35,12 +35,6 @@ cd dashboard
 NODE_ENV=test npm start
 ```
 
-### Option 4: Agent-Triggered Start
-Use the Dashboard-Manager agent to automatically start the service:
-```
-@Dashboard-Manager start
-```
-
 ## Operating Modes
 
 ### Real Mode
@@ -79,9 +73,7 @@ Use the Dashboard-Manager agent to automatically start the service:
 
 ## Integration with Claude Code
 
-### Recommended Approach: Dashboard-Manager Agent
-
-After investigating the Claude Code Agents system, the best approach is to create a dedicated **Dashboard-Manager** agent that handles the dashboard lifecycle. This follows the existing agent pattern and integrates seamlessly with the task-based system.
+Recommended approaches for integrating the dashboard with the agent system:
 
 ### Implementation Options
 
@@ -94,31 +86,6 @@ npm start
 - **Pros**: Simple, immediate implementation
 - **Cons**: Requires manual intervention, not integrated with agent system
 - **Use Case**: Development and testing
-
-#### Option 2: Dashboard-Manager Agent (Recommended)
-Create a new agent that manages dashboard lifecycle:
-
-**Agent Responsibilities:**
-- Start/stop dashboard service
-- Monitor dashboard health
-- Handle service failures and restarts
-- Integrate with DevOps-Engineer for deployment
-
-**Task Example:**
-```json
-{
-  "id": "dashboard-001",
-  "type": "service_management",
-  "status": "pending",
-  "agent": "Dashboard-Manager",
-  "payload": {
-    "title": "Start Dashboard Service",
-    "description": "Initialize and start the Claude Code Agents Dashboard",
-    "action": "start",
-    "port": 3001
-  }
-}
-```
 
 #### Option 3: DevOps-Engineer Integration
 Extend the existing DevOps-Engineer agent to handle dashboard services:
@@ -139,9 +106,8 @@ Extend the existing DevOps-Engineer agent to handle dashboard services:
 - Basic functionality testing
 
 **Phase 2: Agent Integration**
-- Create Dashboard-Manager agent
 - Add service management task types
-- Integrate with task.json system
+- Integrate with task.json system via DevOps-Engineer
 
 **Phase 3: Full Integration**
 - Auto-start capabilities

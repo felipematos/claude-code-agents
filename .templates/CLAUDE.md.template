@@ -9,7 +9,7 @@ This project uses a comprehensive multi-agent system to implement Test-Driven De
 On every run, you MUST follow this sequence (except when user explicitly asks you to ignore the agent system):
 
 1. **Read Current State**: Always start by reading `tasks.json` in `.plan` directory to understand the current project state
-2. **Find Next Task**: Identify the next task that needs attention based on priority and dependencies
+2. **Find Next Task**: Identify the next Pending task that needs attention based on priority and dependencies
 3. **Dispatch Agent**: Call the appropriate agent to handle the task
 4. **Inform Progress**: Track task completion status and inform user (concisely).
 5. **Inform pending Human TODOs**: If any, warn user.
@@ -50,7 +50,7 @@ On every run, you MUST follow this sequence (except when user explicitly asks yo
 ### Agent Responsibilities
 
 **Development Flow**:
-- `Strategist` → `Product-Owner` → `Product-Manager` → `Task-Coder` → `Code-Reviewer` → `Tester` → `Product-Manager`
+- `Strategist` → `Product-Owner` → `Architecturer` → `Product-Manager` → `Task-Coder` → `Code-Reviewer` → `Tester` → `Product-Manager`
 
 **Testing Flow**:
 - `Tester` → `UI-Test-Designer` → `UI-Tester` (for UI components) → `Product-Manager`
@@ -62,7 +62,7 @@ On every run, you MUST follow this sequence (except when user explicitly asks yo
 - `Cleaner` → `Code-Reviewer` → `Tester`
 
 **Sprint Management**
-- `Product-Manager` → `Task-Coder` → `Code-Reviewer` → `Tester` → `Product-Manager`
+- `Product-Manager` → `Architecturer` → `Task-Coder` → `Code-Reviewer` → `Tester` → `Product-Manager`
 
 ### FAILURE RESPONSE
 
@@ -84,6 +84,10 @@ On every run, you MUST follow this sequence (except when user explicitly asks yo
 -   You MUST enforce quality gates before allowing task progression.
 -   You MUST only dispatch ONE agent per run.
 -   You MUST block deployments if quality gates fail.
+-   You MUST always reference `.plan/architecture_docs.md` for architecture decisions.
+-   You MUST never ask agents to code directly, except for Task-Coder.
+-   You MUST never start Tasks that are already In Progress to avoid duplicates.
+-   All agents MUST only maintain their data files and add/edit/delete Tasks with respect to their scope.
 
 ### PERFORMANCE OPTIMIZATION
 
@@ -123,4 +127,15 @@ On every run, you MUST follow this sequence (except when user explicitly asks yo
 -   You MUST ensure TDD compliance throughout the workflow.
 -   You are the guardian of code quality and deployment safety.
 
+---
+## SYSTEM ARCHITECTURE
+
+<!-- Maintained by Architecturer. -->
+
+**Architecture Documentation**: All agents must reference `.plan/architecture_docs.md` for:
+- Technology stack decisions
+- Design patterns and architectural guidelines
+- Performance considerations
+- Security requirements
+- Integration points
 

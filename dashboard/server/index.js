@@ -8,6 +8,7 @@ const bodyParser = require('body-parser');
 const helmet = require('helmet');
 const compression = require('compression');
 const { spawn } = require('child_process');
+const { exec } = require('child_process');
 
 const app = express();
 const PORT = process.env.PORT || 3002;
@@ -587,7 +588,7 @@ async function readWithDemoFallbackJson(filename) {
   // Fallback for demo mode: read from repo root .demo if present
   if (DEMO_MODE) {
     try {
-      const demoPath = path.join(REPO_ROOT, '.demo', filename);
+      const demoPath = path.join(REPO_ROOT, '.demo', '.plan', filename);
       if (await fs.pathExists(demoPath)) {
         const content = await fs.readFile(demoPath, 'utf8');
         const parsed = JSON.parse(content);
@@ -852,6 +853,122 @@ app.post('/api/orchestration/start', (req, res) => {
   } catch (error) {
     res.status(500).json({ error: 'Failed to start orchestration cycle' });
   }
+});
+
+// Self-Improvement API Routes
+
+app.get('/api/learnings', async (req, res) => {
+  try {
+    const learnings = await readWithDemoFallbackJson('learnings.json');
+    res.json(learnings);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to read learnings' });
+  }
+});
+
+app.post('/api/learnings/approve', async (req, res) => {
+  try {
+    const { id } = req.body;
+    const learningsPath = path.join(REPO_ROOT, 'learnings.json');
+    const approvedLearningsPath = path.join(REPO_ROOT, 'approved_learnings.json');
+
+    let learnings = [];
+    if (await fs.pathExists(learningsPath)) {
+      learnings = JSON.parse(await fs.readFile(learningsPath, 'utf8'));
+    }
+
+    const learningIndex = learnings.findIndex(l => l.id === id);
+    if (learningIndex === -1) {
+      return res.status(404).json({ error: 'Learning not found' });
+    }
+
+    const [approvedLearning] = learnings.splice(learningIndex, 1);
+
+    let approvedLearnings = [];
+    if (await fs.pathExists(approvedLearningsPath)) {
+      approvedLearnings = JSON.parse(await fs.readFile(approvedLearningsPath, 'utf8'));
+    }
+
+    approvedLearnings.push(approvedLearning);
+
+    await fs.writeFile(learningsPath, JSON.stringify(learnings, null, 2));
+    await fs.writeFile(approvedLearningsPath, JSON.stringify(approvedLearnings, null, 2));
+
+    console.log(`Agent Improver dispatched for ${id}`);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to approve learning' });
+  }
+});
+
+app.get('/api/agents/changelog', async (req, res) => {
+  try {
+    // In demo mode, use mocked changelog data
+    if (DEMO_MODE) {
+      const demoChangelogPath = path.join(REPO_ROOT, '.demo', 'agent_changelog.json');
+      if (await fs.pathExists(demoChangelogPath)) {
+        const demoChangelog = JSON.parse(await fs.readFile(demoChangelogPath, 'utf8'));
+        return res.json(demoChangelog);
+      }
+    }
+
+    // Real mode: use git log
+    const agentsDir = path.join(REPO_ROOT, 'agents');
+    fs.readdir(agentsDir, (err, files) => {
+      if (err) {
+        return res.status(500).json({ error: 'Failed to read agents directory' });
+      }
+
+      const changelog = {};
+      const gitLogPromises = files.filter(file => file.endsWith('.md')).map(file => {
+        const agentName = file.replace('.md', '');
+        const command = `git log --pretty=format:'{%n  "commit": "%H",%n  "author": "%an",%n  "date": "%ad",%n  "message": "%f"%n},' -- ${path.join(agentsDir, file)}`;
+
+        return new Promise((resolve, reject) => {
+          exec(command, (err, stdout) => {
+            if (err) {
+              return reject(err);
+            }
+            const logData = `[${stdout.slice(0, -1)}]`;
+            changelog[agentName] = JSON.parse(logData);
+            resolve();
+          });
+        });
+      });
+
+      Promise.all(gitLogPromises)
+        .then(() => res.json(changelog))
+        .catch(() => res.status(500).json({ error: 'Failed to get git log' }));
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get agent changelog' });
+  }
+});
+
+app.get('/api/agents/:agentName/diff/:commitHash', (req, res) => {
+  const { agentName, commitHash } = req.params;
+  const agentFile = `${agentName}.md`;
+  const command = `git show ${commitHash} -- ${path.join(REPO_ROOT, 'agents', agentFile)}`;
+
+  exec(command, (err, stdout) => {
+    if (err) {
+      return res.status(500).json({ error: 'Failed to get diff' });
+    }
+    res.send(stdout);
+  });
+});
+
+app.post('/api/agents/:agentName/revert/:commitHash', (req, res) => {
+  const { agentName, commitHash } = req.params;
+  const agentFile = `${agentName}.md`;
+  const command = `git checkout ${commitHash} -- ${path.join(REPO_ROOT, 'agents', agentFile)}`;
+
+  exec(command, (err) => {
+    if (err) {
+      return res.status(500).json({ error: 'Failed to revert agent' });
+    }
+    res.json({ success: true });
+  });
 });
 
 // File watcher for real-time updates

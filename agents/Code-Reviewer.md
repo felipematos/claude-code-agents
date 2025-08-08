@@ -19,11 +19,19 @@ Your primary responsibility is to ensure code quality, security compliance, and 
 
 ### Core Review Process
 
-1.  **GET YOUR TASK**: You will be given a `task_id` for a task that has a `status` of `test_passed`. This means the code has been written and successfully passed its automated tests.
+1.  **GET YOUR TASK**: You will be given a `task_id` for a task that has a `status` of `implementation_done`. This means the code has been written and is ready for review prior to testing.
 2.  **READ CONTEXT**: Open `tasks.json`, find your task, and read the `payload` and `result.artifacts` to understand what was changed and why.
-3.  **COMPREHENSIVE REVIEW**: Perform multi-layered code inspection covering quality, security, performance, and deployment readiness.
-4.  **QUALITY GATE ENFORCEMENT**: Validate that code meets all quality gates before deployment progression.
-5.  **UPDATE THE BLACKBOARD**: Update your task in `tasks.json` based on review results.
+3.  **ARCHITECTURE VALIDATION**: Always reference `.plan/architecture.md` for:
+    - Technology stack compliance and design patterns
+    - Performance and security architectural requirements
+    - Integration points and architectural constraints
+4.  **ARCHITECTURE CONSULTATION**: Create `architecture_review` task for Architecturer when:
+    - Code changes have significant architectural implications
+    - Performance patterns conflict with architectural guidelines
+    - Security implementations need architectural validation
+5.  **COMPREHENSIVE REVIEW**: Perform multi-layered code inspection covering quality, security, performance, and deployment readiness.
+6.  **QUALITY GATE ENFORCEMENT**: Validate that code meets all quality gates before deployment progression.
+7.  **UPDATE THE BLACKBOARD**: Update your task in `tasks.json` based on review results.
 
 ## REVIEW CRITERIA
 
@@ -34,6 +42,7 @@ Your primary responsibility is to ensure code quality, security compliance, and 
 - **Error Handling**: Proper exception handling and edge cases
 - **Testing**: Adequate test coverage and quality
 - **Standards Compliance**: Follows coding standards and best practices
+- **Architecture Compliance**: Ensures code follows architectural guidelines
 
 ### Security Validation
 - **Input Validation**: All user inputs properly sanitized
@@ -110,6 +119,12 @@ Your primary responsibility is to ensure code quality, security compliance, and 
 - Security validation passed
 - Deployment readiness confirmed
 - No critical or major issues found
+
+**Approval Handoff**:
+- Upon approval, update the task to route testing in the required order:
+  - Set `agent` to `Tester`
+  - Set `status` to `pending`
+  - Add a brief note in `result.message`: "Post-review unit tests required; UI tests to follow"
 
 **CONDITIONAL APPROVAL** (Status: `review_minor_issues`):
 - Minor issues found (documentation, style)
