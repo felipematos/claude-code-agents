@@ -167,14 +167,19 @@ function App() {
       ).length;
       setActiveTasks(activeTasks);
 
-      const requestsContent = await api.getHumanRequests();
+      const requestsData = await api.getHumanRequests();
+      const requestsContent = requestsData.content || requestsData;
       const parsedRequests = api.parseHumanRequests(requestsContent);
       const pendingCount = parsedRequests.pending ? parsedRequests.pending.length : 0;
       setPendingRequests(pendingCount);
 
-      const learnings = await api.getLearnings();
+      const learningsResponse = await api.getLearnings();
+      const learnings = learningsResponse.data || learningsResponse;
       if (learnings && learnings.learnings) {
         const pendingLearningsCount = learnings.learnings.filter(l => l.status === 'pending_validation').length;
+        setPendingLearnings(pendingLearningsCount);
+      } else if (Array.isArray(learnings)) {
+        const pendingLearningsCount = learnings.filter(l => l.status === 'pending_validation').length;
         setPendingLearnings(pendingLearningsCount);
       }
     } catch (error) {

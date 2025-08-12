@@ -9,10 +9,11 @@ class ApiService {
     if (!response.ok) {
       throw new Error(`Failed to fetch ${endpoint}`);
     }
-    return response.json();
+    const data = await response.json();
+    return { data };
   }
 
-  async post(endpoint, data) {
+  async post(endpoint, data = {}) {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'POST',
       headers: {
@@ -21,9 +22,11 @@ class ApiService {
       body: JSON.stringify(data),
     });
     if (!response.ok) {
-      throw new Error(`Failed to post to ${endpoint}`);
+      const error = await response.text();
+      throw new Error(error || `Failed to post to ${endpoint}`);
     }
-    return response.json();
+    const result = await response.json();
+    return { data: result };
   }
 
   async put(endpoint, data) {
@@ -43,7 +46,7 @@ class ApiService {
   async getRepositoryType() {
     try {
       const response = await this.get('/repo-type');
-      return response.type;
+      return response.data?.type || response.type || 'unknown';
     } catch (error) {
       console.error('Failed to get repository type:', error);
       return 'unknown';
@@ -68,12 +71,14 @@ class ApiService {
 
   async getTasks() {
     const response = await this.get('/tasks');
+    // Handle wrapped response
+    const data = response.data || response;
     // Handle both new structure and legacy
-    if (response.tasks) {
-      return response.tasks;
+    if (data.tasks) {
+      return data.tasks;
     }
     // Fallback for direct array response
-    return response;
+    return data;
   }
 
   async updateTask(taskId, taskData) {
@@ -103,7 +108,8 @@ class ApiService {
     if (!response.ok) {
       throw new Error('Failed to fetch human requests');
     }
-    return response.text();
+    const data = await response.json();
+    return data;
   }
 
   async updateHumanRequests(content) {
