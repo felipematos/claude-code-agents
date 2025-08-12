@@ -11,66 +11,162 @@ import {
   StepLabel,
   Alert,
   CircularProgress,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Chip,
   List,
   ListItem,
   ListItemText,
   ListItemIcon,
-  Paper
+  Paper,
+  Divider,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  LinearProgress,
+  IconButton,
+  Autocomplete
 } from '@mui/material';
 import {
-  ExpandMore as ExpandMoreIcon,
   PlayArrow as PlayArrowIcon,
   CheckCircle as CheckCircleIcon,
-  Code as CodeIcon,
-  Download as DownloadIcon,
-  Settings as SettingsIcon,
-  Rocket as RocketIcon
+  Warning as WarningIcon,
+  Error as ErrorIcon,
+  Terminal as TerminalIcon,
+  Description as DescriptionIcon,
+  Rocket as RocketIcon,
+  ArrowBack as ArrowBackIcon,
+  ArrowForward as ArrowForwardIcon,
+  Add as AddIcon,
+  Delete as DeleteIcon
 } from '@mui/icons-material';
 import { api } from '../services/api';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
-const Setup = () => {
-  const [repoStatus, setRepoStatus] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [activeStep, setActiveStep] = useState(0);
+const Setup = ({ onSetupComplete }) => {
+  const navigate = useNavigate();
+  const [phase, setPhase] = useState('checking'); // checking, blocked, wizard, executing, monitoring, complete
+  const [wizardStep, setWizardStep] = useState(0);
+  const [agentsInstalled, setAgentsInstalled] = useState(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [setupBlocked, setSetupBlocked] = useState(false);
+  
   const [formData, setFormData] = useState({
+    // Step 1: Project Information
+    projectName: '',
     projectDescription: '',
-    techStack: '',
-    productVision: ''
+    projectType: '',
+    
+    // Step 2: Technical Details
+    primaryLanguage: '',
+    techStack: [],
+    deploymentTarget: '',
+    
+    // Step 3: Business Context
+    targetUsers: '',
+    mainFeatures: [],
+    successMetrics: '',
+    timeline: ''
   });
-  const [simulationResult, setSimulationResult] = useState(null);
-  const [isSimulating, setIsSimulating] = useState(false);
+  
+  const [executionStatus, setExecutionStatus] = useState({
+    currentStep: '',
+    completedSteps: [],
+    logs: [],
+    error: null
+  });
+  
+  const [strategistSession, setStrategistSession] = useState({
+    id: null,
+    running: false,
+    output: [],
+    status: null
+  });
 
-  const steps = [
-    'Project Description',
-    'Technology Stack',
-    'Product Vision',
-    'Setup Execution'
+  const wizardSteps = [
+    'Project Information',
+    'Technical Architecture',
+    'Product Vision & Goals',
+    'Review & Launch'
+  ];
+
+  const techStackSuggestions = [
+    'React', 'Vue.js', 'Angular', 'Next.js',
+    'Node.js', 'Express', 'FastAPI', 'Django',
+    'PostgreSQL', 'MongoDB', 'MySQL', 'Redis',
+    'Docker', 'Kubernetes', 'AWS', 'GCP', 'Azure',
+    'GraphQL', 'REST API', 'WebSocket',
+    'TypeScript', 'Python', 'Java', 'Go', 'Rust'
   ];
 
   useEffect(() => {
-    fetchRepoStatus();
+    checkPrerequisites();
   }, []);
 
-  const fetchRepoStatus = async () => {
+  useEffect(() => {
+    if (strategistSession.id) {
+      // Set up WebSocket connection for monitoring
+      const ws = new WebSocket(`ws://localhost:3003`);
+      
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        
+        if (data.type === 'strategist_output' && data.sessionId === strategistSession.id) {
+          setStrategistSession(prev => ({
+            ...prev,
+            output: [...prev.output, data.data]
+          }));
+        } else if (data.type === 'strategist_complete' && data.sessionId === strategistSession.id) {
+          setStrategistSession(prev => ({
+            ...prev,
+            running: false,
+            status: data.exitCode === 0 ? 'completed' : 'failed'
+          }));
+          
+          if (data.exitCode === 0) {
+            setTimeout(() => {
+              toast.success('Setup completed successfully!');
+              if (onSetupComplete) {
+                onSetupComplete();
+              } else {
+                navigate('/');
+              }
+            }, 2000);
+          }
+        }
+      };
+      
+      return () => ws.close();
+    }
+  }, [strategistSession.id, navigate]);
+
+  const checkPrerequisites = async () => {
     try {
-      // Use service helper if available, otherwise fallback to GET
-      let statusResp;
-      if (typeof api.getSetupStatus === 'function') {
-        statusResp = await api.getSetupStatus();
-      } else {
-        statusResp = await api.get('/setup/status');
+      // Check if already initialized
+      const initResponse = await api.get('/setup/check-initialized');
+      if (initResponse.data.initialized) {
+        toast.success('Project already initialized, redirecting to dashboard...');
+        if (onSetupComplete) {
+          setTimeout(() => onSetupComplete(), 1000);
+        } else {
+          setTimeout(() => navigate('/'), 1000);
+        }
+        return;
       }
-      const data = statusResp?.data ?? statusResp;
-      setRepoStatus(data);
+      
+      // Check for agents
+      const agentResponse = await api.get('/setup/check-agents');
+      setAgentsInstalled(agentResponse.data.installed);
+      
+      if (!agentResponse.data.installed) {
+        setSetupBlocked(true);
+        setPhase('blocked');
+      } else {
+        setPhase('wizard');
+      }
     } catch (error) {
-      console.error('Failed to fetch repo status:', error);
-    } finally {
-      setLoading(false);
+      console.error('Failed to check prerequisites:', error);
+      setPhase('wizard'); // Proceed anyway
     }
   };
 
@@ -78,71 +174,116 @@ const Setup = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleNext = () => {
-    setActiveStep(prev => prev + 1);
-  };
-
-  const handleBack = () => {
-    setActiveStep(prev => prev - 1);
-  };
-
-  const handleSetup = async () => {
-    setIsSimulating(true);
-    try {
-      // Prefer server-reported demoMode when available
-      const isDemo = Boolean(repoStatus?.demoMode || repoStatus?.canSimulate);
-      const endpoint = isDemo ? '/setup/simulate' : '/setup/execute';
-
-      // Ensure we call the correct api method that maps to POST
-      let response;
-      if (isDemo && typeof api.simulateSetup === 'function') {
-        response = await api.simulateSetup(formData);
-      } else if (!isDemo && typeof api.executeSetup === 'function') {
-        response = await api.executeSetup(formData);
-      } else if (typeof api.post === 'function') {
-        response = await api.post(endpoint, formData);
-      } else if (typeof api.request === 'function') {
-        response = await api.request('POST', endpoint, formData);
-      } else {
-        // Final fallback using fetch to guarantee request goes out
-        const res = await fetch(`/api${endpoint}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        });
-        if (!res.ok) throw new Error(`Setup request failed with status ${res.status}`);
-        response = await res.json();
-        setSimulationResult(response);
-        if (activeStep !== steps.length - 1) setActiveStep(steps.length - 1);
-        setIsSimulating(false);
-        toast.success(isDemo ? 'Simulation completed' : 'Setup started');
-        return;
-      }
-
-      // API helper may already return data or response.data depending on implementation
-      const data = response?.data ?? response;
-      if (!data || (isDemo && !data.steps)) {
-        console.warn('Unexpected setup response shape:', data);
-      }
-      setSimulationResult(data);
-      // Advance to report view if not already at the last step
-      if (activeStep !== steps.length - 1) {
-        setActiveStep(steps.length - 1);
-      }
-      toast.success(isDemo ? 'Simulation completed' : 'Setup started');
-    } catch (error) {
-      console.error('Setup failed:', error);
-      toast.error(`Setup failed: ${error.message || 'Unknown error'}`);
-    } finally {
-      setIsSimulating(false);
+  const handleAddFeature = () => {
+    if (formData.mainFeatures.length < 5) {
+      setFormData(prev => ({
+        ...prev,
+        mainFeatures: [...prev.mainFeatures, '']
+      }));
     }
   };
 
-  const renderStepContent = (step) => {
+  const handleUpdateFeature = (index, value) => {
+    const newFeatures = [...formData.mainFeatures];
+    newFeatures[index] = value;
+    setFormData(prev => ({
+      ...prev,
+      mainFeatures: newFeatures
+    }));
+  };
+
+  const handleRemoveFeature = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      mainFeatures: prev.mainFeatures.filter((_, i) => i !== index)
+    }));
+  };
+
+  const validateStep = (step) => {
     switch (step) {
+      case 0:
+        return formData.projectName && formData.projectDescription && formData.projectType;
+      case 1:
+        return formData.primaryLanguage && formData.techStack.length > 0 && formData.deploymentTarget;
+      case 2:
+        return formData.targetUsers && formData.mainFeatures.filter(f => f).length >= 3 && formData.timeline;
+      default:
+        return true;
+    }
+  };
+
+  const executeSetup = async () => {
+    setPhase('executing');
+    setExecutionStatus({
+      currentStep: 'Initializing Claude Code...',
+      completedSteps: [],
+      logs: [],
+      error: null
+    });
+
+    try {
+      // Step 1: Initialize Claude Code
+      const initResponse = await api.post('/setup/init-claude-code');
+      setExecutionStatus(prev => ({
+        ...prev,
+        completedSteps: [...prev.completedSteps, 'Claude Code initialized'],
+        currentStep: 'Configuring CLAUDE.md...'
+      }));
+      
+      // Step 2: Update CLAUDE.md
+      const updateResponse = await api.post('/setup/update-claude-md');
+      setExecutionStatus(prev => ({
+        ...prev,
+        completedSteps: [...prev.completedSteps, 'CLAUDE.md configured'],
+        currentStep: 'Launching Strategist agent...'
+      }));
+      
+      // Step 3: Launch Strategist
+      const strategistResponse = await api.post('/setup/launch-strategist', {
+        context: formData
+      });
+      
+      setStrategistSession({
+        id: strategistResponse.data.sessionId,
+        running: true,
+        output: [],
+        status: 'running'
+      });
+      
+      setExecutionStatus(prev => ({
+        ...prev,
+        completedSteps: [...prev.completedSteps, 'Strategist agent launched'],
+        currentStep: 'Strategist is creating your product strategy...'
+      }));
+      
+      setPhase('monitoring');
+      
+    } catch (error) {
+      console.error('Setup failed:', error);
+      setExecutionStatus(prev => ({
+        ...prev,
+        error: error.response?.data?.error || error.message || 'Setup failed',
+        currentStep: ''
+      }));
+      setPhase('error');
+    }
+  };
+
+  const renderWizardStep = () => {
+    switch (wizardStep) {
       case 0:
         return (
           <Box sx={{ mt: 2 }}>
+            <TextField
+              fullWidth
+              label="Project Name"
+              value={formData.projectName}
+              onChange={(e) => handleInputChange('projectName', e.target.value)}
+              placeholder="My Awesome Project"
+              required
+              sx={{ mb: 2 }}
+            />
+            
             <TextField
               fullWidth
               label="Project Description"
@@ -150,135 +291,297 @@ const Setup = () => {
               rows={4}
               value={formData.projectDescription}
               onChange={(e) => handleInputChange('projectDescription', e.target.value)}
-              placeholder="Describe your project, its purpose, and main goals..."
-              helperText="This will be used to initialize Claude Code and guide the agent system"
+              placeholder="A comprehensive platform that..."
+              required
+              sx={{ mb: 2 }}
             />
+            
+            <FormControl fullWidth required>
+              <InputLabel>Project Type</InputLabel>
+              <Select
+                value={formData.projectType}
+                onChange={(e) => handleInputChange('projectType', e.target.value)}
+                label="Project Type"
+              >
+                <MenuItem value="Web Application">Web Application</MenuItem>
+                <MenuItem value="Mobile App">Mobile App</MenuItem>
+                <MenuItem value="API/Backend">API/Backend</MenuItem>
+                <MenuItem value="Desktop Application">Desktop Application</MenuItem>
+                <MenuItem value="Library/Framework">Library/Framework</MenuItem>
+                <MenuItem value="Other">Other</MenuItem>
+              </Select>
+            </FormControl>
           </Box>
         );
+        
       case 1:
         return (
           <Box sx={{ mt: 2 }}>
-            <TextField
-              fullWidth
-              label="Technology Stack"
+            <FormControl fullWidth required sx={{ mb: 2 }}>
+              <InputLabel>Primary Programming Language</InputLabel>
+              <Select
+                value={formData.primaryLanguage}
+                onChange={(e) => handleInputChange('primaryLanguage', e.target.value)}
+                label="Primary Programming Language"
+              >
+                <MenuItem value="JavaScript/TypeScript">JavaScript/TypeScript</MenuItem>
+                <MenuItem value="Python">Python</MenuItem>
+                <MenuItem value="Java">Java</MenuItem>
+                <MenuItem value="Go">Go</MenuItem>
+                <MenuItem value="Rust">Rust</MenuItem>
+                <MenuItem value="C#">C#</MenuItem>
+                <MenuItem value="Other">Other</MenuItem>
+              </Select>
+            </FormControl>
+            
+            <Autocomplete
+              multiple
+              options={techStackSuggestions}
               value={formData.techStack}
-              onChange={(e) => handleInputChange('techStack', e.target.value)}
-              placeholder="e.g., React, Node.js, Python, Docker, AWS..."
-              helperText="List the main technologies and frameworks you'll be using"
+              onChange={(e, newValue) => handleInputChange('techStack', newValue)}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Technology Stack"
+                  placeholder="Type and select technologies"
+                  required
+                />
+              )}
+              sx={{ mb: 2 }}
             />
+            
+            <FormControl fullWidth required>
+              <InputLabel>Deployment Target</InputLabel>
+              <Select
+                value={formData.deploymentTarget}
+                onChange={(e) => handleInputChange('deploymentTarget', e.target.value)}
+                label="Deployment Target"
+              >
+                <MenuItem value="Cloud (AWS/GCP/Azure)">Cloud (AWS/GCP/Azure)</MenuItem>
+                <MenuItem value="On-Premise">On-Premise</MenuItem>
+                <MenuItem value="Hybrid">Hybrid</MenuItem>
+                <MenuItem value="Edge/IoT">Edge/IoT</MenuItem>
+                <MenuItem value="Not decided">Not decided</MenuItem>
+              </Select>
+            </FormControl>
           </Box>
         );
+        
       case 2:
         return (
           <Box sx={{ mt: 2 }}>
             <TextField
               fullWidth
-              label="Product Vision"
+              label="Target Users"
               multiline
-              rows={6}
-              value={formData.productVision}
-              onChange={(e) => handleInputChange('productVision', e.target.value)}
-              placeholder="Describe your product vision, target users, key features, and success metrics..."
-              helperText="This will guide the Strategist agent in creating the initial roadmap"
+              rows={3}
+              value={formData.targetUsers}
+              onChange={(e) => handleInputChange('targetUsers', e.target.value)}
+              placeholder="Describe your primary user personas..."
+              required
+              sx={{ mb: 2 }}
             />
+            
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="subtitle1" gutterBottom>
+                Key Features (3-5 required)
+              </Typography>
+              {formData.mainFeatures.map((feature, index) => (
+                <Box key={index} sx={{ display: 'flex', mb: 1 }}>
+                  <TextField
+                    fullWidth
+                    value={feature}
+                    onChange={(e) => handleUpdateFeature(index, e.target.value)}
+                    placeholder={`Feature ${index + 1}`}
+                  />
+                  <IconButton onClick={() => handleRemoveFeature(index)}>
+                    <DeleteIcon />
+                  </IconButton>
+                </Box>
+              ))}
+              {formData.mainFeatures.length < 5 && (
+                <Button
+                  startIcon={<AddIcon />}
+                  onClick={handleAddFeature}
+                  variant="outlined"
+                  size="small"
+                >
+                  Add Feature
+                </Button>
+              )}
+            </Box>
+            
+            <TextField
+              fullWidth
+              label="Success Metrics"
+              multiline
+              rows={3}
+              value={formData.successMetrics}
+              onChange={(e) => handleInputChange('successMetrics', e.target.value)}
+              placeholder="How will you measure success? (e.g., user adoption, performance metrics...)"
+              sx={{ mb: 2 }}
+            />
+            
+            <FormControl fullWidth required>
+              <InputLabel>Expected Timeline</InputLabel>
+              <Select
+                value={formData.timeline}
+                onChange={(e) => handleInputChange('timeline', e.target.value)}
+                label="Expected Timeline"
+              >
+                <MenuItem value="ASAP (< 1 month)">ASAP (&lt; 1 month)</MenuItem>
+                <MenuItem value="Short-term (1-3 months)">Short-term (1-3 months)</MenuItem>
+                <MenuItem value="Medium-term (3-6 months)">Medium-term (3-6 months)</MenuItem>
+                <MenuItem value="Long-term (6+ months)">Long-term (6+ months)</MenuItem>
+              </Select>
+            </FormControl>
           </Box>
         );
+        
       case 3:
         return (
           <Box sx={{ mt: 2 }}>
             <Alert severity="info" sx={{ mb: 2 }}>
-              {(repoStatus?.demoMode || repoStatus?.canSimulate)
-                ? 'Running in demo mode. Data is read and written under .demo (including .demo/tests). Click the button below to launch the Setup Wizard simulation. It will show a full step-by-step report of what would run in a real repository.'
-                : 'Running in real mode. Data is read and written under .plan (including .plan/tests). Missing files will be initialized from templates on first run. Click the button below to execute the setup process for your repository.'}
+              Review your configuration. The system will automatically:
+              <ul style={{ marginTop: 8, marginBottom: 0 }}>
+                <li>Initialize Claude Code</li>
+                <li>Configure CLAUDE.md with agent orchestrator</li>
+                <li>Launch Strategist agent with your project context</li>
+              </ul>
             </Alert>
+            
             <Typography variant="h6" gutterBottom>
-              Setup Summary
+              Project Summary
             </Typography>
-            <List>
+            
+            <List dense>
               <ListItem>
-                <ListItemIcon><CodeIcon /></ListItemIcon>
-                <ListItemText 
-                  primary="Project" 
-                  secondary={formData.projectDescription || 'Not specified'} 
-                />
+                <ListItemText primary="Project Name" secondary={formData.projectName} />
               </ListItem>
               <ListItem>
-                <ListItemIcon><SettingsIcon /></ListItemIcon>
+                <ListItemText primary="Type" secondary={formData.projectType} />
+              </ListItem>
+              <ListItem>
+                <ListItemText primary="Primary Language" secondary={formData.primaryLanguage} />
+              </ListItem>
+              <ListItem>
                 <ListItemText 
                   primary="Tech Stack" 
-                  secondary={formData.techStack || 'Not specified'} 
+                  secondary={formData.techStack.join(', ')} 
                 />
               </ListItem>
               <ListItem>
-                <ListItemIcon><RocketIcon /></ListItemIcon>
+                <ListItemText primary="Deployment" secondary={formData.deploymentTarget} />
+              </ListItem>
+              <ListItem>
+                <ListItemText primary="Timeline" secondary={formData.timeline} />
+              </ListItem>
+              <ListItem>
                 <ListItemText 
-                  primary="Vision" 
-                  secondary={formData.productVision || 'Not specified'} 
+                  primary="Key Features" 
+                  secondary={formData.mainFeatures.filter(f => f).join(', ')} 
                 />
               </ListItem>
             </List>
           </Box>
         );
+        
       default:
         return null;
     }
   };
 
-  const renderSimulationResult = () => {
-    if (!simulationResult) return null;
-
-    return (
-      <Card sx={{ mt: 3 }}>
+  const renderExecutionPhase = () => (
+    <Box sx={{ mt: 3 }}>
+      <Typography variant="h5" gutterBottom>
+        Setting Up Your Project
+      </Typography>
+      
+      <Card sx={{ mt: 2 }}>
         <CardContent>
           <Typography variant="h6" gutterBottom>
-            {repoStatus?.canSimulate ? 'Setup Simulation Report' : 'Setup Execution Report'}
+            {executionStatus.currentStep}
           </Typography>
           
-          <Alert severity="success" sx={{ mb: 2 }}>
-            {simulationResult.summary || (repoStatus?.demoMode || repoStatus?.canSimulate
-              ? 'Setup simulation completed. Below are the steps that would have been executed in a real repository.'
-              : 'Setup execution started.')}
-          </Alert>
-
-          <Typography variant="subtitle2" gutterBottom>
-            Execution Steps:
-          </Typography>
-
-          {/* Show raw payload for debugging if steps missing to ensure something is visible */}
-          {(!simulationResult.steps || simulationResult.steps.length === 0) && (
-            <Paper sx={{ p: 2, mb: 2, bgcolor: 'grey.100', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
-              {JSON.stringify(simulationResult, null, 2)}
-            </Paper>
+          <List>
+            {executionStatus.completedSteps.map((step, index) => (
+              <ListItem key={index}>
+                <ListItemIcon>
+                  <CheckCircleIcon color="success" />
+                </ListItemIcon>
+                <ListItemText primary={step} />
+              </ListItem>
+            ))}
+          </List>
+          
+          {executionStatus.error && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {executionStatus.error}
+            </Alert>
           )}
           
-          {(simulationResult.steps || []).map((step, index) => (
-            <Accordion key={index}>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Chip label={`Step ${step.step}`} size="small" />
-                  <Typography>{step.action}</Typography>
-                </Box>
-              </AccordionSummary>
-              <AccordionDetails>
-                <Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    {step.description}
-                  </Typography>
-                  <Paper sx={{ p: 1, bgcolor: 'grey.100', fontFamily: 'monospace' }}>
-                    <Typography variant="body2">
-                      {step.command}
-                    </Typography>
-                  </Paper>
-                </Box>
-              </AccordionDetails>
-            </Accordion>
-          ))}
+          <LinearProgress sx={{ mt: 2 }} />
         </CardContent>
       </Card>
-    );
-  };
+    </Box>
+  );
 
-  if (loading) {
+  const renderMonitoringPhase = () => (
+    <Box sx={{ mt: 3 }}>
+      <Typography variant="h5" gutterBottom>
+        Strategist Agent Running
+      </Typography>
+      
+      <Alert severity="info" sx={{ mb: 2 }}>
+        The Strategist agent is creating your product strategy. This may take a few minutes.
+      </Alert>
+      
+      <Card>
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <CircularProgress size={20} sx={{ mr: 2 }} />
+            <Typography>
+              {executionStatus.currentStep}
+            </Typography>
+          </Box>
+          
+          <Paper 
+            sx={{ 
+              p: 2, 
+              bgcolor: 'grey.900', 
+              color: 'grey.100',
+              maxHeight: 400,
+              overflow: 'auto',
+              fontFamily: 'monospace',
+              fontSize: '0.875rem'
+            }}
+          >
+            {strategistSession.output.length === 0 ? (
+              <Typography variant="body2">Waiting for output...</Typography>
+            ) : (
+              strategistSession.output.map((line, index) => (
+                <div key={index}>{line}</div>
+              ))
+            )}
+          </Paper>
+          
+          {strategistSession.status === 'completed' && (
+            <Alert severity="success" sx={{ mt: 2 }}>
+              Setup completed successfully! Redirecting to dashboard...
+            </Alert>
+          )}
+          
+          {strategistSession.status === 'failed' && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              Strategist agent encountered an error. Please check the logs above.
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+    </Box>
+  );
+
+  if (phase === 'checking') {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
         <CircularProgress />
@@ -286,68 +589,85 @@ const Setup = () => {
     );
   }
 
-  if (repoStatus?.isReady) {
+  if (phase === 'blocked') {
     return (
-      <Card>
+      <Card sx={{ maxWidth: 600, mx: 'auto', mt: 4 }}>
         <CardContent>
-          <Alert severity="success">
-            <Typography variant="h6">Repository Already Configured</Typography>
-            <Typography>
-              This repository is already set up with Claude Code Agents. 
-              You can use the dashboard to manage your agents and tasks.
+          <Alert severity="error" icon={<ErrorIcon />}>
+            <Typography variant="h6" gutterBottom>
+              Agent Files Not Found
             </Typography>
+            <Typography variant="body2" paragraph>
+              The Claude Code Agents are not installed in your project.
+            </Typography>
+            <Typography variant="body2" paragraph>
+              Please copy the agent files to <code>.claude/agents/</code> folder in your project root:
+            </Typography>
+            <Paper sx={{ p: 2, bgcolor: 'grey.100', mt: 2 }}>
+              <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                1. Download agents from the repository<br/>
+                2. Create folder: mkdir -p .claude/agents<br/>
+                3. Copy all .md files to .claude/agents/<br/>
+                4. Refresh this page to continue
+              </Typography>
+            </Paper>
           </Alert>
         </CardContent>
       </Card>
     );
   }
 
+  if (phase === 'executing') {
+    return renderExecutionPhase();
+  }
+
+  if (phase === 'monitoring') {
+    return renderMonitoringPhase();
+  }
+
+  // Wizard phase
   return (
     <Box sx={{ maxWidth: 800, mx: 'auto', p: 2 }}>
       <Typography variant="h4" gutterBottom>
         Claude Code Agents Setup
       </Typography>
       
-      <Typography variant="body1" color="text.secondary" gutterBottom>
-        {repoStatus?.canSimulate 
-          ? 'Template Repository - Setup Simulation Mode'
-          : 'New Project Repository - Real Setup Mode'}
-      </Typography>
-
       <Card sx={{ mt: 3 }}>
         <CardContent>
-          <Stepper activeStep={activeStep} sx={{ mb: 3 }}>
-            {steps.map((label) => (
+          <Stepper activeStep={wizardStep} sx={{ mb: 3 }}>
+            {wizardSteps.map((label) => (
               <Step key={label}>
                 <StepLabel>{label}</StepLabel>
               </Step>
             ))}
           </Stepper>
 
-          {renderStepContent(activeStep)}
+          {renderWizardStep()}
 
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
             <Button
-              disabled={activeStep === 0}
-              onClick={handleBack}
+              disabled={wizardStep === 0}
+              onClick={() => setWizardStep(prev => prev - 1)}
+              startIcon={<ArrowBackIcon />}
             >
               Back
             </Button>
             
-            {activeStep === steps.length - 1 ? (
+            {wizardStep === wizardSteps.length - 1 ? (
               <Button
                 variant="contained"
-                onClick={handleSetup}
-                disabled={isSimulating || !formData.projectDescription}
-                startIcon={isSimulating ? <CircularProgress size={20} /> : <PlayArrowIcon />}
+                onClick={executeSetup}
+                disabled={!validateStep(wizardStep)}
+                startIcon={<RocketIcon />}
               >
-                {isSimulating ? 'Processing...' : (repoStatus?.canSimulate ? 'Simulate Setup' : 'Execute Setup')}
+                Launch Setup
               </Button>
             ) : (
               <Button
                 variant="contained"
-                onClick={handleNext}
-                disabled={activeStep === 0 && !formData.projectDescription}
+                onClick={() => setWizardStep(prev => prev + 1)}
+                disabled={!validateStep(wizardStep)}
+                endIcon={<ArrowForwardIcon />}
               >
                 Next
               </Button>
@@ -355,8 +675,6 @@ const Setup = () => {
           </Box>
         </CardContent>
       </Card>
-
-      {renderSimulationResult()}
     </Box>
   );
 };

@@ -526,7 +526,9 @@ function App() {
       return (
         <ThemeProvider theme={createAppTheme(darkMode)}>
           <CssBaseline />
-          <Setup onSetupComplete={() => window.location.reload()} />
+          <Router>
+            <Setup onSetupComplete={() => window.location.reload()} />
+          </Router>
         </ThemeProvider>
       );
     case 'existing_project':

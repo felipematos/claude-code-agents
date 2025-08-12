@@ -106,11 +106,15 @@ start_dashboard() {
     print_status "Server API will be available at: http://localhost:$SERVER_PORT"
     print_status "Press Ctrl+C to stop the dashboard"
     
+    # Dashboard is in ./dashboard folder, repo root is parent (..)
     if [ "$demo_mode" = "true" ]; then
         print_status "Running in DEMO MODE with sample data"
         NODE_ENV=demo npm start
+    elif [ ! -d "../.plan" ]; then
+        print_status "Template repository detected (no .plan folder) - running in demo mode"
+        NODE_ENV=demo npm start
     elif [ ! -d "../.plan/tasks" ] || { [ -d "../.plan/tasks" ] && [ ! -f "../.plan/tasks/index.json" ] && [ -z "$(ls -1 ../.plan/tasks/*.json 2>/dev/null)" ]; }; then
-        print_status "Template/new repository detected (no per-task structure) - running in test mode"
+        print_status "New repository detected (no per-task structure) - running in setup mode"
         NODE_ENV=test npm start
     else
         print_status "Project repository detected (per-task structure) - running in production mode"

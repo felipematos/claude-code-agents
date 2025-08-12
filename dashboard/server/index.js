@@ -29,6 +29,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
  * - If .plan missing -> template (DEMO MODE)
  */
 function detectRepositoryType() {
+  // Server is at dashboard/server/index.js, repo root is two levels up
   const repoRoot = path.join(__dirname, '../../');
   const planDir = path.join(repoRoot, '.plan');
   const tasksDir = path.join(planDir, 'tasks');
@@ -37,6 +38,12 @@ function detectRepositoryType() {
   const hasPlanDir = fs.existsSync(planDir);
   const hasTasksDir = fs.existsSync(tasksDir);
   const hasIndex = fs.existsSync(indexPath);
+
+  console.log('Detecting repository type:');
+  console.log('  Repo root:', repoRoot);
+  console.log('  .plan dir exists:', hasPlanDir);
+  console.log('  .plan/tasks dir exists:', hasTasksDir);
+  console.log('  .plan/tasks/index.json exists:', hasIndex);
 
   // DEMO MODE: No .plan folder at repo root
   if (!hasPlanDir) {
@@ -60,7 +67,7 @@ const REPO_TYPE = detectRepositoryType();
 // DEMO MODE: when no './.plan' at repo root (REPO_TYPE === 'template')
 const DEMO_MODE = REPO_TYPE === 'template';
 
-// Base directories
+// Base directories - Server is at dashboard/server/, repo root is two levels up
 const REPO_ROOT = path.join(__dirname, '../../');
 const PLAN_DIR_REAL = path.join(REPO_ROOT, '.plan');
 const DEMO_DIR = path.join(REPO_ROOT, '.demo');
@@ -503,6 +510,268 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Check for agents in .claude/agents
+app.get('/api/setup/check-agents', async (req, res) => {
+  try {
+    const agentsDir = path.join(REPO_ROOT, '.claude', 'agents');
+    
+    if (!await fs.pathExists(agentsDir)) {
+      return res.json({ 
+        installed: false, 
+        count: 0, 
+        agents: [],
+        error: 'Agents directory not found'
+      });
+    }
+    
+    const files = await fs.readdir(agentsDir);
+    const agentFiles = files.filter(f => f.endsWith('.md'));
+    const agents = agentFiles.map(f => f.replace('.md', ''));
+    
+    res.json({ 
+      installed: agentFiles.length > 0, 
+      count: agentFiles.length,
+      agents,
+      path: agentsDir
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to check agents', details: error.message });
+  }
+});
+
+// Check if project is already initialized
+app.get('/api/setup/check-initialized', async (req, res) => {
+  try {
+    const checks = {
+      hasPlanDir: await fs.pathExists(PLAN_DIR),
+      hasClaudeMd: await fs.pathExists(path.join(REPO_ROOT, 'CLAUDE.md')),
+      hasTasks: false,
+      hasAgentContent: false
+    };
+    
+    // Check for tasks
+    if (checks.hasPlanDir) {
+      const tasksDir = path.join(PLAN_DIR, 'tasks');
+      if (await fs.pathExists(tasksDir)) {
+        const indexPath = path.join(tasksDir, 'index.json');
+        if (await fs.pathExists(indexPath)) {
+          const index = JSON.parse(await fs.readFile(indexPath, 'utf8'));
+          checks.hasTasks = index.tasks && index.tasks.length > 0;
+        }
+      }
+      
+      // Fallback to legacy
+      if (!checks.hasTasks) {
+        const legacyPath = path.join(PLAN_DIR, 'tasks.json');
+        if (await fs.pathExists(legacyPath)) {
+          const tasks = JSON.parse(await fs.readFile(legacyPath, 'utf8'));
+          checks.hasTasks = tasks.tasks && tasks.tasks.length > 0;
+        }
+      }
+    }
+    
+    // Check if CLAUDE.md has agent content
+    if (checks.hasClaudeMd) {
+      const content = await fs.readFile(path.join(REPO_ROOT, 'CLAUDE.md'), 'utf8');
+      checks.hasAgentContent = content.includes('Claude Code Agents');
+    }
+    
+    const initialized = checks.hasPlanDir && checks.hasClaudeMd && checks.hasAgentContent;
+    
+    res.json({ 
+      initialized,
+      details: checks
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to check initialization', details: error.message });
+  }
+});
+
+// Initialize Claude Code
+app.post('/api/setup/init-claude-code', async (req, res) => {
+  try {
+    const { spawn } = require('child_process');
+    
+    const child = spawn('claude', ['code', 'init'], {
+      cwd: REPO_ROOT,
+      shell: true
+    });
+    
+    let output = '';
+    let error = '';
+    
+    child.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+    
+    child.stderr.on('data', (data) => {
+      error += data.toString();
+    });
+    
+    child.on('close', (code) => {
+      if (code === 0) {
+        res.json({ success: true, output });
+      } else {
+        res.status(500).json({ success: false, error: error || 'Claude Code init failed', code });
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to initialize Claude Code', details: error.message });
+  }
+});
+
+// Update CLAUDE.md with orchestrator content
+app.post('/api/setup/update-claude-md', async (req, res) => {
+  try {
+    const claudeMdPath = path.join(REPO_ROOT, 'CLAUDE.md');
+    const templatePath = path.join(REPO_ROOT, '.templates', 'CLAUDE.md.template');
+    
+    // Read template
+    if (!await fs.pathExists(templatePath)) {
+      return res.status(400).json({ error: 'CLAUDE.md.template not found' });
+    }
+    
+    const templateContent = await fs.readFile(templatePath, 'utf8');
+    
+    // Read existing CLAUDE.md if it exists
+    let existingContent = '';
+    if (await fs.pathExists(claudeMdPath)) {
+      existingContent = await fs.readFile(claudeMdPath, 'utf8');
+      
+      // Check if already has orchestrator content
+      if (existingContent.includes('Claude Code Agents')) {
+        return res.json({ success: true, message: 'CLAUDE.md already contains orchestrator content' });
+      }
+    }
+    
+    // Prepend template to existing content
+    const newContent = templateContent + '\n\n' + existingContent;
+    await fs.writeFile(claudeMdPath, newContent);
+    
+    res.json({ success: true, message: 'CLAUDE.md updated successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update CLAUDE.md', details: error.message });
+  }
+});
+
+// Launch Strategist agent with context
+app.post('/api/setup/launch-strategist', async (req, res) => {
+  try {
+    const { prompt, context } = req.body;
+    const { spawn } = require('child_process');
+    
+    // Generate enhanced prompt with context
+    const fullPrompt = `
+Create a comprehensive product strategy for the following project:
+
+PROJECT: ${context.projectName}
+DESCRIPTION: ${context.projectDescription}
+TYPE: ${context.projectType}
+
+TECHNICAL DETAILS:
+- Primary Language: ${context.primaryLanguage}
+- Tech Stack: ${context.techStack?.join(', ')}
+- Deployment: ${context.deploymentTarget}
+
+BUSINESS CONTEXT:
+- Target Users: ${context.targetUsers}
+- Key Features: ${context.mainFeatures?.join(', ')}
+- Success Metrics: ${context.successMetrics}
+- Timeline: ${context.timeline}
+
+Please create:
+1. A detailed product vision document
+2. A phased roadmap with clear milestones
+3. Initial epic definitions
+4. Sprint 1 planning with prioritized tasks
+`;
+    
+    const sessionId = `strategist-${Date.now()}`;
+    
+    // Store process reference for monitoring
+    const child = spawn('claude', ['code', '-a', 'Strategist', fullPrompt], {
+      cwd: REPO_ROOT,
+      shell: true
+    });
+    
+    // Store session for WebSocket streaming
+    global.strategistSessions = global.strategistSessions || {};
+    global.strategistSessions[sessionId] = {
+      process: child,
+      output: [],
+      status: 'running',
+      startTime: new Date().toISOString()
+    };
+    
+    child.stdout.on('data', (data) => {
+      const text = data.toString();
+      global.strategistSessions[sessionId].output.push(text);
+      
+      // Broadcast via WebSocket
+      broadcast({
+        type: 'strategist_output',
+        sessionId,
+        data: text
+      });
+    });
+    
+    child.stderr.on('data', (data) => {
+      const text = data.toString();
+      global.strategistSessions[sessionId].output.push(`[ERROR] ${text}`);
+      
+      broadcast({
+        type: 'strategist_error',
+        sessionId,
+        data: text
+      });
+    });
+    
+    child.on('close', (code) => {
+      global.strategistSessions[sessionId].status = code === 0 ? 'completed' : 'failed';
+      global.strategistSessions[sessionId].exitCode = code;
+      global.strategistSessions[sessionId].endTime = new Date().toISOString();
+      
+      broadcast({
+        type: 'strategist_complete',
+        sessionId,
+        exitCode: code
+      });
+    });
+    
+    res.json({ 
+      sessionId, 
+      pid: child.pid,
+      message: 'Strategist agent launched successfully'
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to launch Strategist', details: error.message });
+  }
+});
+
+// Get Strategist session status
+app.get('/api/setup/strategist-status/:sessionId', (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const session = global.strategistSessions?.[sessionId];
+    
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    
+    res.json({
+      sessionId,
+      status: session.status,
+      startTime: session.startTime,
+      endTime: session.endTime,
+      exitCode: session.exitCode,
+      outputLength: session.output.length,
+      lastOutput: session.output.slice(-10)
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get session status', details: error.message });
+  }
+});
+
 /**
  * Repository type and demo-mode status
  */
@@ -732,14 +1001,107 @@ app.get('/api/tasks', async (req, res) => {
   try {
     const tasksDir = path.join(PLAN_DIR, 'tasks');
     let tasks = [];
+    let structure = 'unknown';
+    
     if (await fs.pathExists(tasksDir)) {
       tasks = await FileManager.readAllTasks();
+      structure = 'per-task';
     } else {
-      tasks = await readWithDemoFallbackJson('tasks.json');
+      // Try legacy structure
+      const legacyTasks = await readWithDemoFallbackJson('tasks.json');
+      if (legacyTasks && legacyTasks.tasks) {
+        tasks = legacyTasks.tasks;
+        structure = 'monolithic';
+      } else if (Array.isArray(legacyTasks)) {
+        tasks = legacyTasks;
+        structure = 'monolithic';
+      }
     }
-    res.json(tasks);
+    
+    res.json({ 
+      tasks, 
+      structure,
+      isLegacy: structure === 'monolithic'
+    });
   } catch (error) {
+    console.error('Failed to read tasks:', error);
     res.status(500).json({ error: 'Failed to read tasks' });
+  }
+});
+
+// Create new task
+app.post('/api/tasks', async (req, res) => {
+  try {
+    const task = req.body;
+    task.id = task.id || task.task_id || `T-${Date.now()}`;
+    task.task_id = task.id; // Ensure both fields
+    task.createdAt = task.createdAt || new Date().toISOString();
+    
+    const tasksDir = path.join(PLAN_DIR, 'tasks');
+    
+    // Use new structure if available
+    if (await fs.pathExists(tasksDir) || !await fs.pathExists(path.join(PLAN_DIR, 'tasks.json'))) {
+      // Create tasks dir if needed
+      await fs.ensureDir(tasksDir);
+      await FileManager.writeTaskById(task.id, task);
+      await FileManager.appendEvent({ 
+        type: 'TASK_CREATED', 
+        taskId: task.id,
+        task 
+      });
+    } else {
+      // Legacy mode
+      const tasksData = await FileManager.readJsonFile('tasks.json') || { tasks: [] };
+      if (!tasksData.tasks) tasksData.tasks = [];
+      tasksData.tasks.push(task);
+      await FileManager.writeJsonFile('tasks.json', tasksData);
+    }
+    
+    broadcast({ type: 'task_created', data: task });
+    res.json({ success: true, task });
+  } catch (error) {
+    console.error('Failed to create task:', error);
+    res.status(500).json({ error: 'Failed to create task' });
+  }
+});
+
+// Delete task
+app.delete('/api/tasks/:taskId', async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const tasksDir = path.join(PLAN_DIR, 'tasks');
+    
+    if (await fs.pathExists(tasksDir)) {
+      // New structure
+      const taskPath = path.join(tasksDir, `${taskId}.json`);
+      if (await fs.pathExists(taskPath)) {
+        await fs.unlink(taskPath);
+      }
+      
+      // Update index
+      const indexPath = path.join(tasksDir, 'index.json');
+      if (await fs.pathExists(indexPath)) {
+        const index = JSON.parse(await fs.readFile(indexPath, 'utf8'));
+        index.tasks = (index.tasks || []).filter(t => t.task_id !== taskId && t.id !== taskId);
+        await fs.writeFile(indexPath, JSON.stringify(index, null, 2));
+      }
+      
+      await FileManager.appendEvent({ 
+        type: 'TASK_DELETED', 
+        taskId 
+      });
+    } else {
+      // Legacy mode
+      const tasksData = await FileManager.readJsonFile('tasks.json') || { tasks: [] };
+      tasksData.tasks = (tasksData.tasks || []).filter(t => t.task_id !== taskId && t.id !== taskId);
+      await FileManager.writeJsonFile('tasks.json', tasksData);
+    }
+    
+    broadcast({ type: 'task_deleted', data: { taskId } });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Failed to delete task:', error);
+    res.status(500).json({ error: 'Failed to delete task' });
   }
 });
 
@@ -748,33 +1110,116 @@ app.put('/api/tasks/:taskId', async (req, res) => {
   try {
     const { taskId } = req.params;
     const updatedTask = req.body;
+    updatedTask.id = updatedTask.id || taskId;
+    updatedTask.task_id = updatedTask.task_id || taskId;
+    updatedTask.updatedAt = new Date().toISOString();
 
     const tasksDir = path.join(PLAN_DIR, 'tasks');
     if (await fs.pathExists(tasksDir)) {
       await FileManager.writeTaskById(taskId, updatedTask);
-      await FileManager.appendEvent({ type: 'task_updated', task_id: taskId, status: updatedTask.status });
+      await FileManager.appendEvent({ 
+        type: 'TASK_UPDATED', 
+        taskId, 
+        changes: updatedTask 
+      });
       broadcast({ type: 'task_updated', data: updatedTask });
       return res.json(updatedTask);
     }
 
-    // Legacy mode: update tasks.json array
-    const tasks = (await FileManager.readJsonFile('tasks.json')) || [];
-    const taskIndex = tasks.findIndex(task => task.task_id === taskId);
+    // Legacy mode: update tasks.json
+    const tasksData = await FileManager.readJsonFile('tasks.json') || { tasks: [] };
+    if (!tasksData.tasks) tasksData.tasks = [];
+    
+    const taskIndex = tasksData.tasks.findIndex(task => 
+      task.task_id === taskId || task.id === taskId
+    );
 
     if (taskIndex === -1) {
-      tasks.push(updatedTask);
+      tasksData.tasks.push(updatedTask);
     } else {
-      tasks[taskIndex] = { ...tasks[taskIndex], ...updatedTask };
+      tasksData.tasks[taskIndex] = { ...tasksData.tasks[taskIndex], ...updatedTask };
     }
 
-    const ok = await FileManager.writeJsonFile('tasks.json', tasks);
+    const ok = await FileManager.writeJsonFile('tasks.json', tasksData);
     if (!ok) return res.status(500).json({ error: 'Failed to update task' });
 
-    const result = taskIndex === -1 ? updatedTask : tasks[taskIndex];
+    const result = taskIndex === -1 ? updatedTask : tasksData.tasks[taskIndex];
     broadcast({ type: 'task_updated', data: result });
     res.json(result);
   } catch (error) {
+    console.error('Failed to update task:', error);
     res.status(500).json({ error: 'Failed to update task' });
+  }
+});
+
+// Migrate tasks from legacy to new structure
+app.post('/api/tasks/migrate', async (req, res) => {
+  try {
+    const legacyPath = path.join(PLAN_DIR, 'tasks.json');
+    const tasksDir = path.join(PLAN_DIR, 'tasks');
+    
+    if (!await fs.pathExists(legacyPath)) {
+      return res.status(400).json({ error: 'No legacy tasks.json found' });
+    }
+    
+    // Read legacy
+    const legacy = JSON.parse(await fs.readFile(legacyPath, 'utf8'));
+    const tasks = legacy.tasks || [];
+    
+    // Create new structure
+    await fs.ensureDir(tasksDir);
+    
+    // Create index
+    const index = {
+      tasks: [],
+      migrated: true,
+      migratedAt: new Date().toISOString(),
+      lastUpdated: new Date().toISOString()
+    };
+    
+    // Write individual task files
+    for (const task of tasks) {
+      const taskId = task.id || task.task_id || `T-${Date.now()}`;
+      task.id = taskId;
+      task.task_id = taskId;
+      
+      const taskPath = path.join(tasksDir, `${taskId}.json`);
+      await fs.writeFile(taskPath, JSON.stringify(task, null, 2));
+      
+      // Add to index
+      index.tasks.push({
+        task_id: taskId,
+        id: taskId,
+        title: task.title || task.name || '',
+        status: task.status || 'pending',
+        assignee: task.assignee || task.agent || '',
+        priority: task.priority,
+        createdAt: task.createdAt
+      });
+    }
+    
+    // Write index
+    await fs.writeFile(path.join(tasksDir, 'index.json'), JSON.stringify(index, null, 2));
+    
+    // Create events.log
+    await FileManager.appendEvent({
+      type: 'MIGRATION_COMPLETED',
+      tasksCount: tasks.length,
+      from: 'legacy',
+      to: 'per-task'
+    });
+    
+    // Optionally backup legacy file
+    await fs.copy(legacyPath, `${legacyPath}.backup`);
+    
+    res.json({ 
+      success: true, 
+      migratedCount: tasks.length,
+      message: 'Tasks migrated successfully to new structure'
+    });
+  } catch (error) {
+    console.error('Migration failed:', error);
+    res.status(500).json({ error: 'Failed to migrate tasks', details: error.message });
   }
 });
 

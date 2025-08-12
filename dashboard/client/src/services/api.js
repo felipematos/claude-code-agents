@@ -67,7 +67,13 @@ class ApiService {
   }
 
   async getTasks() {
-    return this.get('/tasks');
+    const response = await this.get('/tasks');
+    // Handle both new structure and legacy
+    if (response.tasks) {
+      return response.tasks;
+    }
+    // Fallback for direct array response
+    return response;
   }
 
   async updateTask(taskId, taskData) {
@@ -76,6 +82,20 @@ class ApiService {
 
   async createTask(taskData) {
     return this.post('/tasks', taskData);
+  }
+  
+  async deleteTask(taskId) {
+    const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
+      method: 'DELETE'
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to delete task ${taskId}`);
+    }
+    return response.json();
+  }
+  
+  async migrateTasks() {
+    return this.post('/tasks/migrate');
   }
 
   async getHumanRequests() {
