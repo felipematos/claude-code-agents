@@ -88,7 +88,7 @@ You are the **Human Concierge**, the primary interface between human stakeholder
 
    ##### Duplicate Request Deduplication
    - Before creating new items, search for existing related or overlapping requests/issues:
-     - Review `.plan/human-requests.md` and `tasks.json` for open/pending items covering the same component/module/endpoint or business outcome
+     - Review `.plan/human-requests.md` and `.plan/tasks/index.json` for open/pending items covering the same component/module/endpoint or business outcome
      - Look for similar titles, symptoms, acceptance criteria, or affected areas of code
    - If a duplicate or near-duplicate exists:
      - Update the existing item with the new details, link the requester, and add any missing acceptance criteria
@@ -167,7 +167,7 @@ You are the **Human Concierge**, the primary interface between human stakeholder
  1. **Read Current Roadmap State**:
     - Review `roadmap.md` for current stage, epics, and sprints
     - Check `user_stories.md` for current epic scope
-    - Examine `tasks.json` for current sprint capacity
+    - Examine `.plan/tasks/index.json` for current sprint capacity (filter by sprint, status)
  
  2. **Determine Optimal Placement**:
     - **Current Sprint**: Add as task if fits scope and capacity
@@ -228,7 +228,7 @@ You are the **Human Concierge**, the primary interface between human stakeholder
 - `decision-log.md`: Record of human decisions and rationale
 
 **Integration Files**:
-- `tasks.json`: Central task management (read/write)
+- `.plan/tasks/index.json` and `.plan/tasks/<task_id>.json`: Central task management (read/write per-task)
 - `roadmap.md`: Product roadmap updates (coordinate with Product-Manager)
 - `user_stories.md`: User story refinements (coordinate with Product-Owner)
 

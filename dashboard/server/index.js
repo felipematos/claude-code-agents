@@ -24,30 +24,36 @@ app.use(bodyParser.urlencoded({ extended: true }));
 /**
  * Repository type detection (demo mode aware).
  * Demo mode is TRUE when project-relative './.plan' does not exist.
- * - If .plan exists and has tasks.json -> existing_project (NOT demo)
- * - If .plan exists but no tasks.json -> new_project (NOT demo, but needs setup)
+ * - If .plan exists and has tasks/ (with index.json or any task file) -> existing_project (NOT demo)
+ * - If .plan exists but no tasks/ -> new_project (NOT demo, but needs setup)
  * - If .plan missing -> template (DEMO MODE)
  */
 function detectRepositoryType() {
   const repoRoot = path.join(__dirname, '../../');
   const planDir = path.join(repoRoot, '.plan');
-  const planTasksFile = path.join(planDir, 'tasks.json');
+  const tasksDir = path.join(planDir, 'tasks');
+  const indexPath = path.join(tasksDir, 'index.json');
 
   const hasPlanDir = fs.existsSync(planDir);
-  const hasPlanTasks = fs.existsSync(planTasksFile);
+  const hasTasksDir = fs.existsSync(tasksDir);
+  const hasIndex = fs.existsSync(indexPath);
 
   // DEMO MODE: No .plan folder at repo root
   if (!hasPlanDir) {
     return 'template';
   }
 
-  // .plan exists without tasks.json -> treat as new project needing setup
-  if (hasPlanDir && !hasPlanTasks) {
+  // .plan exists but no tasks dir or index -> treat as new project needing setup
+  if (!hasTasksDir) {
     return 'new_project';
   }
 
-  // .plan exists with tasks.json -> existing project
-  return 'existing_project';
+  // .plan exists with tasks structure -> existing project
+  if (hasTasksDir && (hasIndex || fs.readdirSync(tasksDir).some(n => n.endsWith('.json')))) {
+    return 'existing_project';
+  }
+
+  return 'new_project';
 }
 
 const REPO_TYPE = detectRepositoryType();
@@ -203,6 +209,109 @@ class FileManager {
         }
       }
     }
+  }
+
+  // ---------- New Task Storage (per-task files) ----------
+  /**
+   * Read all tasks using the new structure if available:
+   * - Directory: `${PLAN_DIR}/tasks/`
+   * - Files: `${PLAN_DIR}/tasks/<task_id>.json` and `${PLAN_DIR}/tasks/index.json`
+   * Falls back to legacy `${PLAN_DIR}/tasks.json` (and demo fallback handled by caller, if any)
+   */
+  static async readAllTasks() {
+    const tasksDir = path.join(PLAN_DIR, 'tasks');
+    const indexPath = path.join(tasksDir, 'index.json');
+
+    try {
+      if (await fs.pathExists(tasksDir)) {
+        let ids = [];
+        if (await fs.pathExists(indexPath)) {
+          try {
+            const idx = JSON.parse(await fs.readFile(indexPath, 'utf8')) || [];
+            ids = Array.isArray(idx)
+              ? idx.map(e => e.task_id || e.id).filter(Boolean)
+              : [];
+          } catch (e) {
+            console.warn('Failed to read tasks/index.json, scanning directory instead');
+          }
+        }
+
+        // If index.json missing or empty, scan directory
+        if (!ids.length) {
+          const entries = await fs.readdir(tasksDir);
+          ids = entries
+            .filter(name => name.endsWith('.json') && name !== 'index.json')
+            .map(name => name.replace(/\.json$/, ''));
+        }
+
+        const tasks = [];
+        for (const id of ids) {
+          const p = path.join(tasksDir, `${id}.json`);
+          if (await fs.pathExists(p)) {
+            try {
+              tasks.push(JSON.parse(await fs.readFile(p, 'utf8')));
+            } catch (e) {
+              console.warn(`Failed to parse task file ${p}:`, e.message);
+            }
+          }
+        }
+        return tasks;
+      }
+    } catch (e) {
+      console.warn('readAllTasks() new-structure failed, falling back:', e.message);
+    }
+
+    // Legacy fallback
+    return (await this.readJsonFile('tasks.json')) || [];
+  }
+
+  /**
+   * Write/update a single task file and maintain `tasks/index.json`.
+   */
+  static async writeTaskById(taskId, taskData) {
+    const tasksDir = path.join(PLAN_DIR, 'tasks');
+    const indexPath = path.join(tasksDir, 'index.json');
+    await fs.ensureDir(tasksDir);
+
+    const filePath = path.join(tasksDir, `${taskId}.json`);
+    await fs.writeFile(filePath, JSON.stringify(taskData, null, 2));
+
+    // Update index.json (append or replace entry)
+    let index = [];
+    if (await fs.pathExists(indexPath)) {
+      try {
+        index = JSON.parse(await fs.readFile(indexPath, 'utf8')) || [];
+      } catch (e) {
+        console.warn('Corrupt tasks/index.json, reinitializing');
+      }
+    }
+
+    const meta = {
+      task_id: taskId,
+      title: taskData.title || taskData.name || '',
+      status: taskData.status || 'pending',
+      agent: taskData.agent || taskData.assignee || '',
+      updated_at: new Date().toISOString()
+    };
+
+    const i = index.findIndex(e => (e.task_id || e.id) === taskId);
+    if (i >= 0) {
+      index[i] = { ...index[i], ...meta };
+    } else {
+      index.push(meta);
+    }
+
+    await fs.writeFile(indexPath, JSON.stringify(index, null, 2));
+  }
+
+  /**
+   * Append an event to `.plan/events.log` as NDJSON for auditability.
+   */
+  static async appendEvent(event) {
+    const eventsPath = path.join(PLAN_DIR, 'events.log');
+    const record = { ts: new Date().toISOString(), ...event };
+    await fs.ensureFile(eventsPath);
+    await fs.appendFile(eventsPath, JSON.stringify(record) + '\n');
   }
 }
 
@@ -618,42 +727,58 @@ async function readWithDemoFallbackMarkdown(filename) {
   return primary || '';
 }
 
-// Get all tasks
+// Get all tasks (supports new per-task structure with fallback)
 app.get('/api/tasks', async (req, res) => {
   try {
-    const tasks = await readWithDemoFallbackJson('tasks.json');
+    const tasksDir = path.join(PLAN_DIR, 'tasks');
+    let tasks = [];
+    if (await fs.pathExists(tasksDir)) {
+      tasks = await FileManager.readAllTasks();
+    } else {
+      tasks = await readWithDemoFallbackJson('tasks.json');
+    }
     res.json(tasks);
   } catch (error) {
     res.status(500).json({ error: 'Failed to read tasks' });
   }
 });
 
-// Update task
+// Update task (writes to per-task structure when present; legacy fallback otherwise)
 app.put('/api/tasks/:taskId', async (req, res) => {
   try {
     const { taskId } = req.params;
     const updatedTask = req.body;
-    
-    const tasks = await FileManager.readJsonFile('tasks.json') || [];
+
+    const tasksDir = path.join(PLAN_DIR, 'tasks');
+    if (await fs.pathExists(tasksDir)) {
+      await FileManager.writeTaskById(taskId, updatedTask);
+      await FileManager.appendEvent({ type: 'task_updated', task_id: taskId, status: updatedTask.status });
+      broadcast({ type: 'task_updated', data: updatedTask });
+      return res.json(updatedTask);
+    }
+
+    // Legacy mode: update tasks.json array
+    const tasks = (await FileManager.readJsonFile('tasks.json')) || [];
     const taskIndex = tasks.findIndex(task => task.task_id === taskId);
-    
+
     if (taskIndex === -1) {
-      return res.status(404).json({ error: 'Task not found' });
-    }
-    
-    tasks[taskIndex] = { ...tasks[taskIndex], ...updatedTask };
-    
-    if (await FileManager.writeJsonFile('tasks.json', tasks)) {
-      broadcast({ type: 'task_updated', data: tasks[taskIndex] });
-      res.json(tasks[taskIndex]);
+      tasks.push(updatedTask);
     } else {
-      res.status(500).json({ error: 'Failed to update task' });
+      tasks[taskIndex] = { ...tasks[taskIndex], ...updatedTask };
     }
+
+    const ok = await FileManager.writeJsonFile('tasks.json', tasks);
+    if (!ok) return res.status(500).json({ error: 'Failed to update task' });
+
+    const result = taskIndex === -1 ? updatedTask : tasks[taskIndex];
+    broadcast({ type: 'task_updated', data: result });
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: 'Failed to update task' });
   }
 });
 
+// ... rest of the code remains the same ...
 // Get human requests
 app.get('/api/human-requests', async (req, res) => {
   try {
@@ -986,6 +1111,10 @@ function setupFileWatcher() {
     try {
       if (filename === 'tasks.json') {
         const tasks = await FileManager.readJsonFile('tasks.json');
+        broadcast({ type: 'tasks_updated', data: tasks });
+      } else if (filePath.startsWith(path.join(PLAN_DIR, 'tasks') + path.sep)) {
+        // Any change within the tasks directory (new structure)
+        const tasks = await FileManager.readAllTasks();
         broadcast({ type: 'tasks_updated', data: tasks });
       } else if (filename === 'human-requests.md') {
         const content = await FileManager.readMarkdownFile('human-requests.md');

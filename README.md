@@ -6,7 +6,7 @@ A comprehensive multi-agent system for automated software development using Clau
 
 ## Overview
 
-This repository contains a collection of specialized AI agents that work together to manage the entire software development lifecycle. Each agent operates independently but coordinates through a shared task management system (`tasks.json`) and follows strict Test-Driven Development (TDD) principles.
+This repository contains a collection of specialized AI agents that work together to manage the entire software development lifecycle. Each agent operates independently but coordinates through a per-task storage model under `.plan/tasks` using `index.json` (task registry) and individual per-task files, plus an append-only `events.log`. The system follows strict Test-Driven Development (TDD) principles.
 
 ### Key System Features
 
@@ -17,7 +17,7 @@ This repository contains a collection of specialized AI agents that work togethe
 - **Change Tracking**: Complete audit trail of all agent modifications with revert capability
 
 #### Performance Optimization
-- **Selective Task Reading**: Agents filter tasks.json by relevance to reduce token usage
+- **Selective Task Reading**: Agents read `.plan/tasks/index.json` to locate relevant tasks and then open only the needed per-task files (e.g., `.plan/tasks/<task_id>.json`). If the per-task structure is missing, agents may temporarily fallback to legacy `tasks.json`.
 - **Instruction Area Management**: Maximum 20 concise instructions per agent
 - **Prompt Optimization**: Agent-Improver can propose full prompt integration with human approval
 
@@ -64,7 +64,7 @@ Our testing approach provides quality gates at each development stage:
 - **Quality Assurance**: Multi-level code review and testing processes
 - **UI Testing**: Specialized UI test design and execution with browser automation
 - **Deployment Automation**: Automated deployment workflows with quality gates
-- **Task Management**: JSON-based task tracking with status management
+- **Task Management**: Per-task JSON tracking under `.plan/tasks/` with `index.json`, append-only `events.log`, and task-scoped logs/artifacts
 
 ## Workflow
 
@@ -105,12 +105,28 @@ Refer to the individual agent files in the `agents/` directory for specific impl
 ## File Structure
 
 ```
-├── agents/           # Agent definitions and workflows
-├── .templates/       # Template files for project setup
-│   ├── .plan/       # Planning templates (epics, user stories, roadmap)
-│   └── tests/       # Testing templates and 4-tier test suites
-└── README.md        # This file
+├── agents/                    # Agent definitions and workflows
+├── .plan/                     # Project data (real mode)
+│   ├── tasks/
+│   │   ├── index.json        # Task registry (lightweight)
+│   │   ├── T-XXXX.json       # Per-task files (one per task)
+│   ├── events.log            # Append-only audit log
+│   ├── logs/<task_id>/...    # Per-task logs
+│   └── .artifacts/<task_id>/ # Per-task artifacts (large outputs)
+├── .demo/.plan/               # Demo data (mirrors real structure)
+├── .templates/                # Templates for initialization
+│   ├── .plan/                 # Planning templates (epics, roadmaps, etc.)
+│   └── tests/                 # Testing templates and 4-tier suites
+└── README.md                  # This file
 ```
+
+### Branch Policy Enforcement
+- **Task-Coder**: Commits only to `development`. Never push/merge to `staging` or `main`.
+- **DevOps-Engineer**: Sole owner of merges: `development → staging` (staging deploy) and `staging → main` (production deploy).
+
+### File Location Policy
+- All JSON and Markdown files managed by agents must reside under `.plan/` or `tests/` in real mode, and under `.demo/.plan/` or `.demo/tests/` in demo mode.
+- Only `CLAUDE.md` (and `CLAUDE.md.template` in templates) should live at the project root.
 
 ## Quality Assurance
 
@@ -155,8 +171,8 @@ The dashboard will be available at:
 
 ### Demo Mode vs Real Mode
 The dashboard determines its mode dynamically:
-- Demo Mode: Active when there is no .plan directory at the repository root. Data is read/written under .demo and test artifacts under .demo/tests. This mode is writable and file watching is enabled.
-- Real Mode: Active when .plan exists. Data is read/written under .plan and tests under .plan/tests. On first run, any missing files are initialized from .templates/.plan and .templates/tests (templates copied as-is; .template suffix removed for .plan files).
+- Demo Mode: Active when running with `NODE_ENV=demo` or when no per-task structure is detected. Data is under `.demo/.plan/` with tasks in `.demo/.plan/tasks/` using `index.json` + per-task files. This mode is writable and file watching is enabled.
+- Real Mode: Active when a per-task structure is present (e.g., `.plan/tasks/index.json` or any task JSON in `.plan/tasks/`). Data is under `.plan/` with tasks in `.plan/tasks/`. On first run, any missing files are initialized from `.templates/.plan` and `.templates/tests` (templates copied as-is; `.template` suffix removed for `.plan` files). If no per-task files are found, the dashboard may fallback to legacy `.plan/tasks.json` if present.
 
 ### Dashboard Features
 
@@ -184,14 +200,14 @@ The dashboard will then be available to spawn and manage Claude Code agent insta
 - **Do NOT** request features or report bugs directly to Claude Code.
 - Instead, add them to `.plan/human-requests.md` in your project.
 - The Human-Concierge agent will process all new requests and coordinate with the Product-Manager for roadmap integration.
-- Deduplication: Before adding a new item, scan existing entries in `.plan/human-requests.md` and open items in `tasks.json`. If a pending item already addresses the same area or intent, update that existing entry with additional details instead of creating a new one. The Human-Concierge will consolidate duplicates and maintain a single canonical record.
+- **Deduplication**: Before adding a new item, scan existing entries in `.plan/human-requests.md` and open items via `.plan/tasks/index.json` (then inspect only the relevant per-task files). If the per-task structure is missing, check legacy `.plan/tasks.json`. If a pending item already addresses the same area or intent, update that existing entry instead of creating a new one.
 
 ### Handling Agent Questions
 - Regularly check `.plan/human-requests.md` for pending requests requiring your attention.
 - If an agent is blocked (needs clarification or information), it will add a TODO here.
 - Respond to the TODO in the same file to unblock the task.
 
-## Template Files Reference
+### Template Files Reference
 
 Templates for files that will be used by the agents (like the main orchestrator prompt) are stored in the `.templates` directory and have a `.template` extension.
 
@@ -199,7 +215,7 @@ Templates for files that will be used by the agents (like the main orchestrator 
 - `CLAUDE.md.template` - Main orchestrator prompt. Used by the Orchestrator agent to coordinate all other agents.
 
 ### Planning Files (in `.templates/.plan/`)
-- `tasks.json.template` - Central task list (the blackboard). Used by all agents to coordinate work.
+- Task storage is initialized on first run for the per-task structure under `.plan/tasks/` (registry `index.json` + per-task files). Some repositories may include a legacy `tasks.json.template` for migration support.
 - `review-report.md.template` - Code review findings. Written by Code-Reviewer, read by Task-Coder.
 - `human-requests.md.template` - Unified file for all human-system interactions including feature requests, bug reports, agent clarifications, and strategic decisions. Written by agents and users, processed by Human-Concierge.
 

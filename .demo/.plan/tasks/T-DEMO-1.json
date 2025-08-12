@@ -1,0 +1,23 @@
+{
+  "task_id": "T-DEMO-1",
+  "title": "Migrate dashboard to per-task reader",
+  "status": "pending",
+  "agent": "Task-Coder",
+  "payload": {
+    "type": "feature_dashboard",
+    "description": "Update dashboard data layer to read from .plan/tasks/index.json and per-task files. Maintain legacy fallback.",
+    "acceptance_criteria": [
+      "Dashboard lists tasks using per-task structure",
+      "Live updates when per-task files change",
+      "Legacy tasks.json still supported"
+    ],
+    "priority": "high"
+  },
+  "result": {
+    "artifacts": [
+      "dashboard/server/index.js"
+    ],
+    "message": "Initial demo task"
+  },
+  "updated_at": "2025-08-08T15:22:25Z"
+}

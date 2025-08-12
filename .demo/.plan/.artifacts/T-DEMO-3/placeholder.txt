@@ -1,0 +1,1 @@
+Demo artifact placeholder for T-DEMO-3 UI smoke test.

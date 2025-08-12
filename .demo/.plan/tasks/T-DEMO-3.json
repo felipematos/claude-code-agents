@@ -1,0 +1,23 @@
+{
+  "task_id": "T-DEMO-3",
+  "title": "Add UI smoke test for tasks view",
+  "status": "pending",
+  "agent": "Tester",
+  "payload": {
+    "type": "test_ui_smoke",
+    "description": "Create Playwright smoke test for tasks list view using per-task structure.",
+    "acceptance_criteria": [
+      "Tasks list renders with demo tasks",
+      "Status and agent columns visible",
+      "WebSocket updates reflected without reload"
+    ],
+    "priority": "low"
+  },
+  "result": {
+    "artifacts": [
+      "tests/ui/tasks_smoke.spec.ts"
+    ],
+    "message": "Define UI smoke test"
+  },
+  "updated_at": "2025-08-08T15:22:25Z"
+}

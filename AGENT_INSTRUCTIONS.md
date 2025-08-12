@@ -94,8 +94,8 @@ const getFilePath = (relativePath) => {
 };
 
 // Examples:
-// Demo: .demo/.plan/tasks.json
-// Real: .plan/tasks.json
+// Demo: .demo/.plan/tasks/index.json + .demo/.plan/tasks/<task_id>.json
+// Real: .plan/tasks/index.json + .plan/tasks/<task_id>.json
 ```
 
 ### 8. Agent Prompt Updates

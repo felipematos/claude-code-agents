@@ -8,7 +8,7 @@ This project uses a comprehensive multi-agent system to implement Test-Driven De
 
 On every run, you MUST follow this sequence (except when user explicitly asks you to ignore the agent system):
 
-1. **Read Current State**: Always start by reading `tasks.json` in `.plan` directory to understand the current project state
+1. **Read Current State**: Always start by reading the task index at `.demo/.plan/tasks/index.json` and open only the required per-task file at `.demo/.plan/tasks/<task_id>.json`. If the per-task structure is missing, temporarily fallback to legacy `.demo/.plan/tasks.json`.
 2. **Find Next Task**: Identify the next task that needs attention based on priority and dependencies
 3. **Dispatch Agent**: Call the appropriate agent to handle the task
 4. **Inform Progress**: Track task completion status and inform user (concisely).
@@ -122,7 +122,7 @@ If an agent fails or blocks:
 <!-- Maintained by Agent-Improver. Applied to Orchestrator workflow. -->
 
 ### Performance Optimizations
-1. Always filter tasks.json by relevance before reading full content
+1. Prefer the per-task structure (`.demo/.plan/tasks/index.json` + `.demo/.plan/tasks/<id>.json`). If legacy `.demo/.plan/tasks.json` exists, filter by relevance before reading full content.
 2. Process high-priority and urgent tasks before routine coordination
 3. Batch similar task types for efficient agent dispatch
 

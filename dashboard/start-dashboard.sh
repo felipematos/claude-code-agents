@@ -109,11 +109,11 @@ start_dashboard() {
     if [ "$demo_mode" = "true" ]; then
         print_status "Running in DEMO MODE with sample data"
         NODE_ENV=demo npm start
-    elif [ ! -f "../.plan/tasks.json" ] || [ ! -s "../.plan/tasks.json" ]; then
-        print_status "Template repository detected - running in test mode"
+    elif [ ! -d "../.plan/tasks" ] || { [ -d "../.plan/tasks" ] && [ ! -f "../.plan/tasks/index.json" ] && [ -z "$(ls -1 ../.plan/tasks/*.json 2>/dev/null)" ]; }; then
+        print_status "Template/new repository detected (no per-task structure) - running in test mode"
         NODE_ENV=test npm start
     else
-        print_status "Production repository detected - running in production mode"
+        print_status "Project repository detected (per-task structure) - running in production mode"
         npm start
     fi
 }

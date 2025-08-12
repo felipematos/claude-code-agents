@@ -1,0 +1,23 @@
+{
+  "task_id": "T-DEMO-2",
+  "title": "Implement per-task Cleaner archiving",
+  "status": "implementation_done",
+  "agent": "Code-Reviewer",
+  "payload": {
+    "type": "maintenance_cleaner",
+    "description": "Update Cleaner to archive per-task files and rotate logs/artifacts; support demo mode.",
+    "acceptance_criteria": [
+      "Cleaner reads index.json and opens only necessary tasks",
+      "Completed per-task files archived to .plan/log-archive/tasks/",
+      "Timeout detection updates per-task files"
+    ],
+    "priority": "medium"
+  },
+  "result": {
+    "artifacts": [
+      "agents/Cleaner.md"
+    ],
+    "message": "Cleaner updated for per-task structure"
+  },
+  "updated_at": "2025-08-08T15:22:25Z"
+}

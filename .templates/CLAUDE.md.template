@@ -8,7 +8,7 @@ This project uses a comprehensive multi-agent system to implement Test-Driven De
 
 On every run, you MUST follow this sequence (except when user explicitly asks you to ignore the agent system):
 
-1. **Read Current State**: Always start by reading `tasks.json` in `.plan` directory to understand the current project state
+1. **Read Current State**: Always start by reading the task index at `.plan/tasks/index.json` (or `.demo/.plan/tasks/index.json` in demo mode). Use the index to locate the next task's file at `.plan/tasks/<task_id>.json`. If the per-task structure is missing, fallback to legacy `.plan/tasks.json`.
 2. **Find Next Task**: Identify the next Pending task that needs attention based on priority and dependencies
 3. **Dispatch Agent**: Call the appropriate agent to handle the task
 4. **Inform Progress**: Track task completion status and inform user (concisely).
@@ -80,7 +80,7 @@ On every run, you MUST follow this sequence (except when user explicitly asks yo
 
 ### CRITICAL RULES
 
--   You MUST process tasks in the order they appear in `tasks.json`.
+-   You MUST process tasks based on the ordering specified by `.plan/tasks/index.json` (e.g., priority/updated_at). When using legacy mode, process tasks by their order/priority as stored in `.plan/tasks.json`.
 -   You MUST enforce quality gates before allowing task progression.
 -   You MUST only dispatch ONE agent per run.
 -   You MUST block deployments if quality gates fail.
@@ -91,16 +91,15 @@ On every run, you MUST follow this sequence (except when user explicitly asks yo
 
 ### PERFORMANCE OPTIMIZATION
 
-**tasks.json Reading Protocol:**
-1. **Never read the entire tasks.json file**
-2. **Use filtering when reading tasks:**
-   - Read tasks by status priority: `pending` → `in_progress` → `blocked`
-   - Use agent-specific filtering for dispatch decisions
-   - Process high-priority tasks first
-3. **Dispatch Efficiency:**
-   - Group tasks by agent when multiple tasks exist for same agent
-   - Prioritize critical/urgent tasks regardless of agent
-   - Skip reading completed tasks unless specifically needed
+**Tasks Reading Protocol (Per-task structure):**
+1. Never load all task files. Read only `.plan/tasks/index.json`, then open the specific `.plan/tasks/<task_id>.json` you need.
+2. Filter using the index first: by `status` (pending → in_progress → blocked), `agent`, and priority. Only then open the target task file(s).
+3. For demo mode, use `.demo/.plan/tasks/` with the same rules.
+4. Legacy fallback: if `.plan/tasks/` does not exist, filter in-memory after reading `.plan/tasks.json` minimally; avoid loading oversized payloads.
+5. Dispatch efficiency:
+   - Group by agent when possible
+   - Prioritize critical/urgent tasks
+   - Skip completed tasks unless needed for dependency checks
 
 ---
 
@@ -108,7 +107,7 @@ On every run, you MUST follow this sequence (except when user explicitly asks yo
 <!-- Maintained by Agent-Improver. Maximum 20 instructions. -->
 
 ### Performance Optimizations
-1. Always filter tasks.json by status and priority before processing
+1. Always use `.plan/tasks/index.json` (or `.demo/.plan/tasks/index.json` in demo) to filter by status, agent, and priority before opening specific per-task files
 2. Batch similar task types when dispatching to the same agent
 3. Skip completed tasks unless specifically needed for context
 

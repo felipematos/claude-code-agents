@@ -1,0 +1,29 @@
+[
+  {
+    "task_id": "T-DEMO-1",
+    "title": "Migrate dashboard to per-task reader",
+    "status": "pending",
+    "agent": "Task-Coder",
+    "type": "feature_dashboard",
+    "priority": "high",
+    "updated_at": "2025-08-08T15:22:25Z"
+  },
+  {
+    "task_id": "T-DEMO-2",
+    "title": "Implement per-task Cleaner archiving",
+    "status": "implementation_done",
+    "agent": "Code-Reviewer",
+    "type": "maintenance_cleaner",
+    "priority": "medium",
+    "updated_at": "2025-08-08T15:22:25Z"
+  },
+  {
+    "task_id": "T-DEMO-3",
+    "title": "Add UI smoke test for tasks view",
+    "status": "pending",
+    "agent": "Tester",
+    "type": "test_ui_smoke",
+    "priority": "low",
+    "updated_at": "2025-08-08T15:22:25Z"
+  }
+]
