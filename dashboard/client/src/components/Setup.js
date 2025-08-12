@@ -73,7 +73,8 @@ const Setup = ({ onSetupComplete }) => {
     currentStep: '',
     completedSteps: [],
     logs: [],
-    error: null
+    error: null,
+    terminalOutput: []
   });
   
   const [strategistSession, setStrategistSession] = useState({
@@ -218,17 +219,60 @@ const Setup = ({ onSetupComplete }) => {
       currentStep: 'Initializing Claude Code...',
       completedSteps: [],
       logs: [],
-      error: null
+      error: null,
+      terminalOutput: []
     });
 
     try {
-      // Step 1: Initialize Claude Code
-      const initResponse = await api.post('/setup/init-claude-code');
-      setExecutionStatus(prev => ({
-        ...prev,
-        completedSteps: [...prev.completedSteps, 'Claude Code initialized'],
-        currentStep: 'Configuring CLAUDE.md...'
-      }));
+      // Step 1: Initialize Claude Code with streaming
+      const eventSource = new EventSource('http://localhost:3002/api/setup/init-claude-code');
+      
+      await new Promise((resolve, reject) => {
+        eventSource.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          
+          switch (data.type) {
+            case 'stdout':
+              setExecutionStatus(prev => ({
+                ...prev,
+                terminalOutput: [...prev.terminalOutput, { type: 'stdout', text: data.data }]
+              }));
+              break;
+              
+            case 'stderr':
+              setExecutionStatus(prev => ({
+                ...prev,
+                terminalOutput: [...prev.terminalOutput, { type: 'stderr', text: data.data }]
+              }));
+              break;
+              
+            case 'error':
+              eventSource.close();
+              reject(new Error(data.error || 'Claude Code initialization failed'));
+              break;
+              
+            case 'complete':
+              eventSource.close();
+              if (data.success) {
+                setExecutionStatus(prev => ({
+                  ...prev,
+                  completedSteps: [...prev.completedSteps, 'Claude Code initialized'],
+                  currentStep: 'Configuring CLAUDE.md...',
+                  terminalOutput: []
+                }));
+                resolve();
+              } else {
+                reject(new Error(data.error || 'Claude Code initialization failed'));
+              }
+              break;
+          }
+        };
+        
+        eventSource.onerror = (error) => {
+          eventSource.close();
+          reject(new Error('Connection lost during initialization'));
+        };
+      });
       
       // Step 2: Update CLAUDE.md
       const updateResponse = await api.post('/setup/update-claude-md');
@@ -262,10 +306,11 @@ const Setup = ({ onSetupComplete }) => {
       console.error('Setup failed:', error);
       setExecutionStatus(prev => ({
         ...prev,
-        error: error.response?.data?.error || error.message || 'Setup failed',
+        error: error.message || 'Setup failed',
         currentStep: ''
       }));
       setPhase('error');
+      toast.error(error.message || 'Setup failed');
     }
   };
 
@@ -326,6 +371,7 @@ const Setup = ({ onSetupComplete }) => {
               >
                 <MenuItem value="JavaScript/TypeScript">JavaScript/TypeScript</MenuItem>
                 <MenuItem value="Python">Python</MenuItem>
+                <MenuItem value="PHP">PHP</MenuItem>
                 <MenuItem value="Java">Java</MenuItem>
                 <MenuItem value="Go">Go</MenuItem>
                 <MenuItem value="Rust">Rust</MenuItem>
@@ -358,6 +404,7 @@ const Setup = ({ onSetupComplete }) => {
                 label="Deployment Target"
               >
                 <MenuItem value="Cloud (AWS/GCP/Azure)">Cloud (AWS/GCP/Azure)</MenuItem>
+                <MenuItem value="Cloud (FPT)">Cloud (FPT)</MenuItem>
                 <MenuItem value="On-Premise">On-Premise</MenuItem>
                 <MenuItem value="Hybrid">Hybrid</MenuItem>
                 <MenuItem value="Edge/IoT">Edge/IoT</MenuItem>
@@ -514,13 +561,62 @@ const Setup = ({ onSetupComplete }) => {
             ))}
           </List>
           
-          {executionStatus.error && (
-            <Alert severity="error" sx={{ mt: 2 }}>
-              {executionStatus.error}
-            </Alert>
+          {/* Terminal Output */}
+          {executionStatus.terminalOutput.length > 0 && (
+            <Paper 
+              sx={{ 
+                p: 2, 
+                mt: 2,
+                bgcolor: '#1e1e1e', 
+                color: '#d4d4d4',
+                maxHeight: 300,
+                overflow: 'auto',
+                fontFamily: 'monospace',
+                fontSize: '0.875rem',
+                '& .stderr': {
+                  color: '#f48771'
+                },
+                '& .stdout': {
+                  color: '#d4d4d4'
+                }
+              }}
+            >
+              {executionStatus.terminalOutput.map((line, index) => (
+                <div key={index} className={line.type}>
+                  {line.text.split('\n').map((text, i) => (
+                    text && <div key={`${index}-${i}`}>{text}</div>
+                  ))}
+                </div>
+              ))}
+            </Paper>
           )}
           
-          <LinearProgress sx={{ mt: 2 }} />
+          {executionStatus.error ? (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {executionStatus.error}
+              <Box sx={{ mt: 1 }}>
+                <Button 
+                  variant="outlined" 
+                  size="small" 
+                  onClick={() => {
+                    setPhase('wizard');
+                    setWizardStep(3);
+                    setExecutionStatus({
+                      currentStep: '',
+                      completedSteps: [],
+                      logs: [],
+                      error: null,
+                      terminalOutput: []
+                    });
+                  }}
+                >
+                  Back to Setup
+                </Button>
+              </Box>
+            </Alert>
+          ) : (
+            <LinearProgress sx={{ mt: 2 }} />
+          )}
         </CardContent>
       </Card>
     </Box>
