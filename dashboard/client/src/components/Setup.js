@@ -249,84 +249,35 @@ const Setup = ({ onSetupComplete }) => {
 
     try {
       console.log('Starting Claude Code initialization...');
-      // Step 1: Initialize Claude Code with streaming
-      // We need to use fetch with a POST request that triggers the SSE response
-      const response = await fetch('http://localhost:3002/api/setup/init-claude-code', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({})
-      });
-
-      if (!response.ok && response.status !== 200) {
-        throw new Error(`Failed to initialize Claude Code: ${response.statusText}`);
-      }
-
-      // For SSE, we need to read the stream
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      await new Promise(async (resolve, reject) => {
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            
-            if (done) break;
-            
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || '';
-            
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                try {
-                  const data = JSON.parse(line.slice(6));
-                  
-                  switch (data.type) {
-                    case 'stdout':
-                      setExecutionStatus(prev => ({
-                        ...prev,
-                        terminalOutput: [...prev.terminalOutput, { type: 'stdout', text: data.data }]
-                      }));
-                      break;
-                      
-                    case 'stderr':
-                      setExecutionStatus(prev => ({
-                        ...prev,
-                        terminalOutput: [...prev.terminalOutput, { type: 'stderr', text: data.data }]
-                      }));
-                      break;
-                      
-                    case 'error':
-                      reject(new Error(data.error || 'Claude Code initialization failed'));
-                      return;
-                      
-                    case 'complete':
-                      if (data.success) {
-                        setExecutionStatus(prev => ({
-                          ...prev,
-                          completedSteps: [...prev.completedSteps, 'Claude Code initialized'],
-                          currentStep: 'Configuring CLAUDE.md...',
-                          terminalOutput: []
-                        }));
-                        resolve();
-                      } else {
-                        reject(new Error(data.error || 'Claude Code initialization failed'));
-                      }
-                      return;
-                  }
-                } catch (e) {
-                  console.error('Failed to parse SSE data:', e);
-                }
-              }
-            }
-          }
-        } catch (error) {
-          reject(new Error('Connection lost during initialization'));
+      // Step 1: Initialize Claude Code
+      setExecutionStatus(prev => ({
+        ...prev,
+        terminalOutput: [{ type: 'stdout', text: 'Initializing Claude Code...\n' }]
+      }));
+      
+      const initResponse = await api.post('/setup/init-claude-code');
+      console.log('Init response:', initResponse);
+      
+      if (initResponse.data?.success) {
+        // Show output if available
+        if (initResponse.data.output) {
+          setExecutionStatus(prev => ({
+            ...prev,
+            terminalOutput: [
+              ...prev.terminalOutput,
+              { type: 'stdout', text: initResponse.data.output }
+            ]
+          }));
         }
-      });
+        
+        setExecutionStatus(prev => ({
+          ...prev,
+          completedSteps: [...prev.completedSteps, 'Claude Code initialized'],
+          currentStep: 'Configuring CLAUDE.md...'
+        }));
+      } else {
+        throw new Error(initResponse.data?.message || initResponse.data?.error || 'Claude Code initialization failed');
+      }
       
       // Step 2: Update CLAUDE.md
       const updateResponse = await api.post('/setup/update-claude-md');

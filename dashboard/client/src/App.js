@@ -189,12 +189,17 @@ function App() {
   }, [addNotification]);
 
   useEffect(() => {
-    // Check repository type first
+    // Check repository type first (only once)
+    let isMounted = true;
+    
     const checkRepositoryType = async () => {
       try {
         const repoType = await api.getRepositoryType();
         console.log('Repository type detected:', repoType);
-        setRepositoryType(repoType);
+        
+        if (isMounted) {
+          setRepositoryType(repoType);
+        }
         
         if (repoType === 'existing_project') {
           // Load settings from localStorage
@@ -291,6 +296,7 @@ function App() {
     document.addEventListener('keydown', handleKeyDown);
 
     return () => {
+      isMounted = false;
       WebSocketService.disconnect();
       document.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('storage', handleSettingsChange);
@@ -532,7 +538,13 @@ function App() {
         <ThemeProvider theme={createAppTheme(darkMode)}>
           <CssBaseline />
           <Router>
-            <Setup onSetupComplete={() => window.location.reload()} />
+            <Setup onSetupComplete={() => {
+              // Instead of reloading, re-check repository type
+              console.log('Setup complete, refreshing...');
+              setTimeout(() => {
+                window.location.reload();
+              }, 1000);
+            }} />
           </Router>
         </ThemeProvider>
       );

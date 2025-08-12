@@ -587,81 +587,96 @@ app.get('/api/setup/check-initialized', async (req, res) => {
   }
 });
 
-// Initialize Claude Code with streaming support
+// Initialize Claude Code - simplified version without streaming for now
 app.post('/api/setup/init-claude-code', async (req, res) => {
   try {
     const { spawn } = require('child_process');
     
-    // Generate session ID for tracking
-    const sessionId = `claude-init-${Date.now()}`;
+    console.log('Initializing Claude Code at:', REPO_ROOT);
     
-    // Set up SSE (Server-Sent Events) for streaming
-    res.writeHead(200, {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive'
-    });
-    
-    // Send initial session info
-    res.write(`data: ${JSON.stringify({ type: 'session', sessionId })}\n\n`);
+    // Check if CLAUDE.md already exists (might already be initialized)
+    const claudeMdPath = path.join(REPO_ROOT, 'CLAUDE.md');
+    if (await fs.pathExists(claudeMdPath)) {
+      console.log('CLAUDE.md already exists, skipping initialization');
+      return res.json({ 
+        success: true, 
+        output: 'Claude Code already initialized (CLAUDE.md exists)', 
+        message: 'Claude Code already initialized',
+        skipped: true
+      });
+    }
     
     const child = spawn('claude', ['code', 'init'], {
       cwd: REPO_ROOT,
-      shell: true,
-      env: { ...process.env, FORCE_COLOR: '1' }
+      shell: true
     });
     
-    let fullOutput = '';
-    let fullError = '';
+    let output = '';
+    let error = '';
+    let responded = false;
+    
+    // Set a timeout
+    const timeout = setTimeout(() => {
+      if (!responded) {
+        responded = true;
+        child.kill();
+        res.status(500).json({ 
+          success: false, 
+          error: 'Initialization timed out after 30 seconds', 
+          output,
+          message: 'Claude Code initialization timed out'
+        });
+      }
+    }, 30000);
     
     child.stdout.on('data', (data) => {
-      const text = data.toString();
-      fullOutput += text;
-      // Stream output to client
-      res.write(`data: ${JSON.stringify({ type: 'stdout', data: text })}\n\n`);
+      output += data.toString();
+      console.log('Claude init stdout:', data.toString());
     });
     
     child.stderr.on('data', (data) => {
-      const text = data.toString();
-      fullError += text;
-      // Stream error to client
-      res.write(`data: ${JSON.stringify({ type: 'stderr', data: text })}\n\n`);
-    });
-    
-    child.on('error', (error) => {
-      res.write(`data: ${JSON.stringify({ 
-        type: 'error', 
-        error: error.message,
-        details: 'Failed to start Claude Code process'
-      })}\n\n`);
-      res.end();
+      error += data.toString();
+      console.log('Claude init stderr:', data.toString());
     });
     
     child.on('close', (code) => {
-      if (code === 0) {
-        res.write(`data: ${JSON.stringify({ 
-          type: 'complete', 
-          success: true, 
-          output: fullOutput 
-        })}\n\n`);
-      } else {
-        res.write(`data: ${JSON.stringify({ 
-          type: 'complete', 
-          success: false, 
-          error: fullError || 'Claude Code init failed', 
-          code 
-        })}\n\n`);
+      clearTimeout(timeout);
+      if (!responded) {
+        responded = true;
+        console.log('Claude init exited with code:', code);
+        if (code === 0) {
+          res.json({ success: true, output, message: 'Claude Code initialized successfully' });
+        } else {
+          res.status(500).json({ 
+            success: false, 
+            error: error || 'Claude Code init failed', 
+            output,
+            code,
+            message: `Claude Code init failed with exit code ${code}`
+          });
+        }
       }
-      res.end();
     });
     
-    // Handle client disconnect
-    req.on('close', () => {
-      child.kill();
+    child.on('error', (err) => {
+      clearTimeout(timeout);
+      if (!responded) {
+        responded = true;
+        console.error('Failed to spawn claude process:', err);
+        res.status(500).json({ 
+          success: false, 
+          error: err.message,
+          message: 'Failed to start Claude Code process. Make sure Claude Code is installed.'
+        });
+      }
     });
     
   } catch (error) {
-    res.status(500).json({ error: 'Failed to initialize Claude Code', details: error.message });
+    console.error('Init endpoint error:', error);
+    res.status(500).json({ 
+      error: 'Failed to initialize Claude Code', 
+      details: error.message 
+    });
   }
 });
 
