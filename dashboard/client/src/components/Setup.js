@@ -50,6 +50,7 @@ const Setup = ({ onSetupComplete }) => {
   const [agentsInstalled, setAgentsInstalled] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [setupBlocked, setSetupBlocked] = useState(false);
+  const [isExecuting, setIsExecuting] = useState(false); // Prevent re-checks during execution
   
   const [formData, setFormData] = useState({
     // Step 1: Project Information
@@ -101,7 +102,10 @@ const Setup = ({ onSetupComplete }) => {
   ];
 
   useEffect(() => {
-    checkPrerequisites();
+    // Only check prerequisites on initial mount, not during execution
+    if (!isExecuting) {
+      checkPrerequisites();
+    }
   }, []);
 
   useEffect(() => {
@@ -127,11 +131,13 @@ const Setup = ({ onSetupComplete }) => {
           if (data.exitCode === 0) {
             setTimeout(() => {
               toast.success('Setup completed successfully!');
-              if (onSetupComplete) {
-                onSetupComplete();
-              } else {
-                navigate('/');
-              }
+              setPhase('complete');
+              // Only navigate/reload after user acknowledges completion
+              // if (onSetupComplete) {
+              //   onSetupComplete();
+              // } else {
+              //   navigate('/');
+              // }
             }, 2000);
           }
         }
@@ -142,6 +148,12 @@ const Setup = ({ onSetupComplete }) => {
   }, [strategistSession.id, navigate]);
 
   const checkPrerequisites = async () => {
+    // Skip if we're already executing
+    if (isExecuting) {
+      console.log('Skipping prerequisites check - already executing');
+      return;
+    }
+    
     try {
       // Check if already initialized
       const initResponse = await api.get('/setup/check-initialized');
@@ -217,6 +229,15 @@ const Setup = ({ onSetupComplete }) => {
   };
 
   const executeSetup = async () => {
+    console.log('executeSetup called');
+    
+    // Prevent multiple executions
+    if (isExecuting) {
+      console.log('Already executing, skipping');
+      return;
+    }
+    
+    setIsExecuting(true);
     setPhase('executing');
     setExecutionStatus({
       currentStep: 'Initializing Claude Code...',
@@ -227,6 +248,7 @@ const Setup = ({ onSetupComplete }) => {
     });
 
     try {
+      console.log('Starting Claude Code initialization...');
       // Step 1: Initialize Claude Code with streaming
       // We need to use fetch with a POST request that triggers the SSE response
       const response = await fetch('http://localhost:3002/api/setup/init-claude-code', {
@@ -336,6 +358,7 @@ const Setup = ({ onSetupComplete }) => {
       
     } catch (error) {
       console.error('Setup failed:', error);
+      setIsExecuting(false);
       setExecutionStatus(prev => ({
         ...prev,
         error: error.message || 'Setup failed',
@@ -752,6 +775,41 @@ const Setup = ({ onSetupComplete }) => {
   if (phase === 'monitoring') {
     return renderMonitoringPhase();
   }
+  
+  if (phase === 'complete') {
+    return (
+      <Box sx={{ maxWidth: 600, mx: 'auto', mt: 4 }}>
+        <Card>
+          <CardContent>
+            <Alert severity="success" icon={<CheckCircleIcon />}>
+              <Typography variant="h6" gutterBottom>
+                Setup Completed Successfully!
+              </Typography>
+              <Typography variant="body2" paragraph>
+                Your Claude Code Agents system has been initialized and configured.
+                The Strategist agent has created your initial product strategy.
+              </Typography>
+              <Box sx={{ mt: 2 }}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => {
+                    if (onSetupComplete) {
+                      onSetupComplete();
+                    } else {
+                      window.location.href = '/';
+                    }
+                  }}
+                >
+                  Go to Dashboard
+                </Button>
+              </Box>
+            </Alert>
+          </CardContent>
+        </Card>
+      </Box>
+    );
+  }
 
   // Wizard phase
   return (
@@ -783,12 +841,17 @@ const Setup = ({ onSetupComplete }) => {
             
             {wizardStep === wizardSteps.length - 1 ? (
               <Button
+                type="button"
                 variant="contained"
-                onClick={executeSetup}
-                disabled={!validateStep(wizardStep)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  executeSetup();
+                }}
+                disabled={!validateStep(wizardStep) || isExecuting}
                 startIcon={<RocketIcon />}
               >
-                Launch Setup
+                {isExecuting ? 'Launching...' : 'Launch Setup'}
               </Button>
             ) : (
               <Button
