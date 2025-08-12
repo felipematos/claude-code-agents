@@ -684,15 +684,45 @@ app.post('/api/setup/init-claude-code', async (req, res) => {
 app.post('/api/setup/update-claude-md', async (req, res) => {
   try {
     const claudeMdPath = path.join(REPO_ROOT, 'CLAUDE.md');
-    const templatePath = path.join(REPO_ROOT, '.templates', 'CLAUDE.md.template');
+    // Template is in the main repo, not in dashboard folder
+    const templatePath = path.join(REPO_ROOT, '../.templates', 'CLAUDE.md.template');
+    
+    console.log('Looking for template at:', templatePath);
+    console.log('REPO_ROOT is:', REPO_ROOT);
     
     // Read template
     if (!await fs.pathExists(templatePath)) {
-      return res.status(400).json({ error: 'CLAUDE.md.template not found' });
+      // Try alternative path (if dashboard is inside the repo)
+      const altTemplatePath = path.join(REPO_ROOT, '.templates', 'CLAUDE.md.template');
+      console.log('Template not found, trying:', altTemplatePath);
+      
+      if (!await fs.pathExists(altTemplatePath)) {
+        return res.status(400).json({ 
+          error: 'CLAUDE.md.template not found',
+          tried: [templatePath, altTemplatePath],
+          repoRoot: REPO_ROOT
+        });
+      }
+      // Use the alternative path
+      const templateContent = await fs.readFile(altTemplatePath, 'utf8');
+      
+      // Continue with the alternative path
+      await processTemplate(claudeMdPath, templateContent, res);
+      return;
     }
     
     const templateContent = await fs.readFile(templatePath, 'utf8');
+    await processTemplate(claudeMdPath, templateContent, res);
     
+  } catch (error) {
+    console.error('Failed to update CLAUDE.md:', error);
+    res.status(500).json({ error: 'Failed to update CLAUDE.md', details: error.message });
+  }
+});
+
+// Helper function to process template
+async function processTemplate(claudeMdPath, templateContent, res) {
+  try {
     // Read existing CLAUDE.md if it exists
     let existingContent = '';
     if (await fs.pathExists(claudeMdPath)) {
@@ -700,7 +730,7 @@ app.post('/api/setup/update-claude-md', async (req, res) => {
       
       // Check if already has orchestrator content
       if (existingContent.includes('Claude Code Agents')) {
-        return res.json({ success: true, message: 'CLAUDE.md already contains orchestrator content' });
+        return res.json({ success: true, message: 'CLAUDE.md already contains orchestrator content', skipped: true });
       }
     }
     
@@ -710,9 +740,9 @@ app.post('/api/setup/update-claude-md', async (req, res) => {
     
     res.json({ success: true, message: 'CLAUDE.md updated successfully' });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update CLAUDE.md', details: error.message });
+    throw error;
   }
-});
+}
 
 // Launch Strategist agent with context
 app.post('/api/setup/launch-strategist', async (req, res) => {

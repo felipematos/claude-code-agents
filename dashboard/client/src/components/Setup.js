@@ -103,9 +103,16 @@ const Setup = ({ onSetupComplete }) => {
 
   useEffect(() => {
     // Only check prerequisites on initial mount, not during execution
-    if (!isExecuting) {
+    // Use a ref to prevent double execution in StrictMode
+    let mounted = true;
+    
+    if (!isExecuting && mounted) {
       checkPrerequisites();
     }
+    
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -228,8 +235,14 @@ const Setup = ({ onSetupComplete }) => {
     }
   };
 
-  const executeSetup = async () => {
-    console.log('executeSetup called');
+  const executeSetup = async (e) => {
+    // Prevent any default form behavior
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    console.log('executeSetup called, isExecuting:', isExecuting);
     
     // Prevent multiple executions
     if (isExecuting) {
@@ -797,10 +810,10 @@ const Setup = ({ onSetupComplete }) => {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  executeSetup();
+                  executeSetup(e);
                 }}
                 disabled={!validateStep(wizardStep) || isExecuting}
-                startIcon={<RocketIcon />}
+                startIcon={isExecuting ? <CircularProgress size={20} /> : <RocketIcon />}
               >
                 {isExecuting ? 'Launching...' : 'Launch Setup'}
               </Button>
